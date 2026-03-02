@@ -1,0 +1,1314 @@
+[
+  {
+    "rank": 1,
+    "name": "Ecostral",
+    "repoUrl": "https://github.com/wilfred-dore/Ecostral",
+    "repoOwner": "wilfred-dore",
+    "repoName": "Ecostral",
+    "track": "On Device (NVIDIA)",
+    "trackNumber": 3,
+    "scores": {
+      "technicity": 22,
+      "creativity": 21,
+      "usefulness": 22,
+      "alignment": 23,
+      "total": 88
+    },
+    "summary": "Ecostral is an AI agent powered by Mistral Large that autonomously finds the most energy-efficient, lowest-carbon, lowest-cost deployment configuration for any HuggingFace model across heterogeneous hardware targets including NVIDIA Jetson Orin. The system runs a closed optimization loop — hardware profiling, W&B memory retrieval, Mistral-driven configuration proposals, real NVML GPU measurements, Pareto frontier selection — and produces hybrid Markdown/LaTeX reports with matplotlib charts. Real GPU results are provided for Mistral-7B-Instruct-v0.3 on an H100 NVL, demonstrating a 36% energy reduction and 50% VRAM reduction at full accuracy retention.",
+    "strengths": [
+      "Real GPU measurements: NVML power polling with trapezoidal integration, not simulated values. The `EnergyMeter` context manager in `ecostral/evaluation/energy.py` is production-quality.",
+      "The closed self-improvement loop (Mistral proposes -> GPU measures -> W&B logs -> Mistral reads past results -> better proposal) is architecturally elegant and directly relevant to both the NVIDIA track and the W&B mini challenge.",
+      "Comprehensive test suite: 8 test files covering Pareto selection, hardware profiling, cost calculation, reasoning engine (with mocked Mistral), optimizer, memory, API, and evaluation — 75 tests passing.",
+      "Honest engineering: the `PRECISION_REDIRECTS` dict in `model_evaluator.py` explicitly redirects FP8 proposals to BF16 with a documented explanation of why torchao's FP8 dispatch is 4x slower on H100 without full TensorRT. The results JSON records `precision_proposed_by_mistral: \"fp8\"` alongside `precision: \"bf16\"` and the implementation note. This transparency is rare.",
+      "Multiple real output artifacts committed: `results.json`, `report.md`, `paper.pdf`, and three matplotlib charts for Mistral-7B, TinyLlama (datacenter), TinyLlama (Jetson Orin), and a second Mistral-7B run — evidence the system ran end-to-end on real hardware.",
+      "Thoughtful hardware abstraction: `TARGET_PROFILES` in `targets.py` encodes allowed/forbidden techniques and hardware constraints for all 6 deployment targets; `derive_search_space` correctly gates FP8 on Hopper compute capability, TensorRT on CUDA availability, and tensor parallelism on multi-GPU configs.",
+      "The W&B memory layer (`wandb_mcp.py`) pre-fetches past runs into a formatted prompt context before each Mistral call — a clean implementation of retrieval-augmented optimization.",
+      "Coding-agent skill files (`skills/ecostral-optimizer/SKILL.md`, `skills/wandb-experiment-memory/SKILL.md`) are well-specified and include chaining with official HuggingFace skills, demonstrating ecosystem thinking."
+    ],
+    "improvements": [
+      "The FP8 + TensorRT path requires the NeMo Docker container (`nvcr.io/nvidia/nemo:25.01`) which was not available during the hackathon demo. The most impactful optimization path for H100 is therefore not actually demonstrated end-to-end in the real results — BF16 is the effective best in all committed outputs.",
+      "All 5 iterations of Mistral-7B converge to the same `fp8/tensorrt` proposal from Mistral Large (iterations 1-5 all show `\"precision\": \"fp8\", \"technique\": \"tensorrt\"` in `results.json`). The self-improvement loop's diversity is limited in practice — Mistral keeps proposing the same config when it is optimal on paper, even though the hardware cannot execute it natively. A novelty penalty or diversity mechanism would strengthen the loop.",
+      "The accuracy benchmark uses MMLU 0-shot log-probability with a small sample (25 samples in the fast demo). For Mistral-7B, the baseline accuracy of 0.57 MMLU is below the model's known capability (~0.64 on full MMLU), suggesting the fast evaluation mode underestimates baseline quality. A more robust accuracy evaluation would improve the scientific validity of the results.",
+      "The FastAPI `/optimize` endpoint uses a stub evaluator (`random.uniform` noise on precision-based constants) rather than the real model evaluator from `model_evaluator.py`. This limits the REST API's production usefulness without additional integration work.",
+      "The WhiteCircle integration is an interesting addition but depends on an invite-only third-party service (`COLUMBIAHACK` invite code), which reduces reproducibility for evaluators and future users.",
+      "The edge target results (Jetson Orin) show latency *increasing* by 76% for INT4 vs FP32, explicitly because H100 proxy measurement does not reflect native Jetson INT4 tensor core behavior. While this is honestly documented, it means the system cannot yet provide a complete end-to-end story for edge deployment without access to real Jetson hardware."
+    ],
+    "specialChallenges": [
+      "**W&B Mini Challenge — Best Self-Improvement Workflow:** Ecostral is directly eligible. The `WandBMemory` class (`ecostral/memory/wandb_mcp.py`) implements a W&B-based memory layer that feeds past experiment results into Mistral's reasoning loop, and every iteration logs 11 canonical metrics back to W&B. The W&B project links in the committed reports provide evidence of real experiment runs. The `wandb-experiment-memory` skill YAML and the chained 4-skill workflow in `skills/EXAMPLE.md` further demonstrate the self-improvement workflow architecture.",
+      "**NVIDIA On-Device Track:** Primary track submission with explicit Jetson Orin support, NeMo Docker integration, and committed edge deployment results."
+    ],
+    "flags": [],
+    "reportFile": "judge_wilfred-dore_ecostral.md"
+  },
+  {
+    "rank": 1,
+    "name": "Mistral_Worldwide_Hackathon_26 (Summa)",
+    "repoUrl": "https://github.com/guustgoossens/Mistral_Worldwide_Hackathon_26",
+    "repoOwner": "guustgoossens",
+    "repoName": "Mistral_Worldwide_Hackathon_26",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 23,
+      "creativity": 23,
+      "usefulness": 20,
+      "alignment": 22,
+      "total": 88
+    },
+    "summary": "Summa turns any codebase into a living 3D knowledge graph that can be explored visually and interrogated via voice. It parses source code using web-tree-sitter (WASM) into an AST, enriches it with git history analysis, loads everything into KuzuDB (an embedded graph database running in WebAssembly in-browser), and connects a voice interview system powered by ElevenLabs Conversational AI and Mistral (DevStral Small 2 for real-time voice, DevStral 2 for deep multi-step graph reasoning). The system also ships an MCP server for integration with Claude Code and Cursor, and includes integration with `voxtral.c` for local on-device STT via Apple Silicon Metal.",
+    "strengths": [
+      "In-browser KuzuDB (WASM) with multi-language tree-sitter parsing is a technically novel combination — giving the AI agent one generic tool (`query_graph(cypher)`) that can answer any structural code question is architecturally elegant",
+      "The multi-step reasoning agent (`server/reasoner/agent-loop.ts`) with L0→L1→L2 progressive disclosure, Cypher query composition by the 123B DevStral 2, loop detection, and MAX_STEPS=8 with forced conclusion shows production-quality AI agent design",
+      "The two-speed Mistral architecture (DevStral Small 2 at ~200 tokens/s for voice, DevStral 2 at ~76 tokens/s for deep analysis) is a principled latency/capability tradeoff with the right model for each task",
+      "Pre-computed interview briefing (6 parallel KuzuDB Cypher queries → DevStral Small 2 JSON briefing → stored on proxy as session context) solves the ElevenLabs tool round-trip reliability problem gracefully",
+      "Graph schema (`File`, `Function`, `Class`, `Person`, `Discussion` nodes; `CONTAINS`, `CALLS`, `IMPORTS`, `INHERITS`, `CONTRIBUTED`, `UNDERSTANDS`, `HAS_PARTICIPANT`, `ABOUT` relationships) captures code architecture, contributor ownership, and knowledge topology in a unified model",
+      "Integration with `voxtral.c` for local Apple Silicon Metal STT, AWS Bedrock dual-mode inference, and MCP server for Claude Code / Cursor — excellent sponsor integration breadth",
+      "Live deployment at https://mistral-worldwide-hackathon-26.vercel.app/ with pre-computed graph data for the `mistral-vibe` and `mistral-python-client` repos"
+    ],
+    "improvements": [
+      "The ElevenLabs tool round-trip issue (intermittent failures when the voice agent tries to compose Cypher queries in real time) forced a pivot to pre-computed briefings — while well-handled, this means the voice agent cannot dynamically query the graph during conversation, limiting the live intelligence",
+      "Only the Interview Agent and Quiz System reached full implementation; the Graph Reasoner and Background Enricher exist as server-side components but are not accessible via the voice interface",
+      "The `voxtral.c` integration requires running a separate native process on Apple Silicon — complex setup that won't work on most deployment targets",
+      "The README promises a Knowledge overlay showing green/red/yellow nodes based on quiz performance, but verifying this works end-to-end requires running the full pipeline locally",
+      "Solo developer project with ambitious scope — the 34-hour timeline shows in some areas (the `UNDERSTANDS` relationship is populated by the quiz system but the People overlay for knowledge silos may not be fully rendered)"
+    ],
+    "specialChallenges": [
+      "**Best use of Mistral Vibe:** Strong candidate. The MCP server (`server/mcp/`) exposes KuzuDB tools to Mistral Vibe (and Claude Code, Cursor), the workspace config (`workspace/.vibe/config.toml`) is included, and the product's core use case (understanding the code your AI agent just wrote) is directly tied to the Vibe CLI workflow. This could also qualify for the \"Best Self-Improvement Workflow\" challenge given the knowledge quiz system that tracks what the engineer understands and targets gaps.",
+      "**Best Self-Improvement Workflow (W&B):** The Knowledge overlay and quiz system create a genuine self-improvement loop: engineers are quizzed on code they haven't engaged with, their understanding is scored and stored as `UNDERSTANDS` relationships in the graph, and the Knowledge overlay visualizes green (understood) vs. red (knowledge gap) vs. yellow (surface only) nodes. This is a compelling case for the \"best self-improvement workflow\" category.",
+      "**The Hackathon's Next Unicorn (Raise):** The README's detailed vision (open-source core with KuzuDB WASM, enterprise tier with Neo4j and central engineering knowledge dashboard) reflects genuine startup thinking. The problem (understanding AI-generated code, preventing knowledge silos, bus factor analysis) is an enterprise pain point with real willingness to pay."
+    ],
+    "flags": [
+      "COI"
+    ],
+    "reportFile": "judge_guustgoossens_mistral_worldwide_hackathon_26.md"
+  },
+  {
+    "rank": 3,
+    "name": "YouGotIt",
+    "repoUrl": "https://github.com/Symbioose/Mistral.ai-Paris-Hackathon",
+    "repoOwner": "Symbioose",
+    "repoName": "Mistral.ai-Paris-Hackathon",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 22,
+      "creativity": 21,
+      "usefulness": 22,
+      "alignment": 21,
+      "total": 86
+    },
+    "summary": "YouGotIt converts any PDF or TXT training document into a voice-powered, multi-agent RPG simulation in approximately 20 seconds. Employees train by playing through dramatic workplace scenarios, speaking or typing their answers, while HR managers receive a detailed competency heatmap and skills-gap report generated by Mistral. Built solo in 30 hours, the project demonstrates a tight, production-minded full-stack integration of Mistral AI via AWS Bedrock, ElevenLabs TTS, and browser-native Web Speech API.",
+    "strengths": [
+      "Deterministic Q&A state machine: game progression is 100% server-controlled; the LLM only generates dialogue text, eliminating hallucination risk on flow logic. The five-phase machine (`ASKING → REPHRASING → LEARNING → RE_ASKING → COMPLETE`) is cleanly implemented and documented.",
+      "Near-zero latency agent transitions: `prefetchedResponseRef` fires the next agent's API call while the outgoing agent's TTS is still playing, so there is no perceptible gap when the simulation hands off between characters.",
+      "Custom BM25 RAG: `app/lib/rag.ts` implements overlapping chunking, French stop-word removal, Unicode normalization, IDF scoring, and a zero-dependency retrieval function. Each agent's system prompt is populated with chunks most relevant to its role and knowledge topics.",
+      "Parallel orchestration with function calling: `runOrchestration()` in `/api/chat/route.ts` runs a separate Mistral Large call in parallel to the streaming response, using three tools (`update_emotion`, `trigger_event`, `agent_note`) to update agent state, trigger narrative events, and populate inter-agent shared memory — all without blocking the streaming dialogue.",
+      "Comprehensive error handling: every Mistral call has a timeout, explicit fallback path, and graceful degradation. `buildFallbackReport()` and `fallbackGamePlan()` ensure the UI never blocks even if the LLM fails entirely.",
+      "TypeScript discipline: `app/lib/types.ts` defines 20+ interfaces covering the full domain model. All API routes share the same type definitions.",
+      "Voice pipeline detail: emotion states map to specific ElevenLabs parameters (e.g., `panicked` sets `stability: 0.20`, `speed: 1.4`, `style: 0.95`), and stage directions in `*asterisks*` are routed to a separate narrator voice — a subtle but impactful UX decision.",
+      "Model cost optimization: categorization (a simple clustering task) is deliberately routed to `mistral-small` (`magistral-small-2509`) while generation and evaluation use `mistral-large`, showing awareness of cost-performance tradeoffs."
+    ],
+    "improvements": [
+      "The `OPENAI_API_KEY` used for AWS Bedrock expires every 12 hours (noted in `README_TECH.md`), which is a fragile setup for a demo and would require a proper credential refresh mechanism for production.",
+      "`app/page.tsx` is a monolithic 700+ line client component containing state management, TTS pipeline, agent prompt building, SSE consumption, and rendering logic. It would benefit from extraction into custom hooks (`useTtsPipeline`, `useMultiAgentChat`) and smaller components.",
+      "The BM25 RAG is built server-side but the `buildRagIndex` call happens on the client in `page.tsx` (via `ragIndexRef`) — this is an inconsistency that means the index is built twice and the client-side version drives agent prompt assembly. Centralizing RAG to the server would be cleaner.",
+      "The project is in French only, including all system prompts, fallback text, and the STT locale (`fr-FR`). The README acknowledges multi-language support as future work, but the deep hardcoding of French makes that non-trivial to add.",
+      "Three legacy files (`app/lib/agents/orchestrator.ts`, `evaluator.ts`, `agent-factory.ts`) are committed but marked as unused. They should be removed or their reintegration planned to avoid confusing future maintainers.",
+      "The scoring system penalizes with raw point deductions (e.g., `-Math.round(maxPointsPerQuestion * 0.2)`) applied to a 0–100 per-category score, but the score can only increase from zero, which means early failures and later correct answers may not compound cleanly across categories of different sizes.",
+      "No authentication or session isolation is implemented. The landing page mentions \"HR tokens\" and \"team access codes\" but these are placeholder UI flows (`landingModalStep: \"idle\" | \"loading\" | \"done\"`) with no backend verification, which would need to be built for production deployment."
+    ],
+    "specialChallenges": [
+      "**Best Voice Use Case (ElevenLabs):** Strong candidate. The project uses five distinct ElevenLabs voices with dynamically adjusted emotion parameters, a narrator-voice separation pattern, parallel TTS pre-fetching, streaming endpoint with retry fallback, and integrates voice output with Web Speech API voice input in a complete voice-first training loop. This is one of the most sophisticated ElevenLabs integrations likely present at the hackathon.",
+      "**AWS Track:** Primary track; fully aligned through AWS Bedrock with both `mistral-large-3-675b-instruct` and `magistral-small-2509`."
+    ],
+    "flags": [],
+    "reportFile": "judge_symbioose_mistral.ai-paris-hackathon.md"
+  },
+  {
+    "rank": 4,
+    "name": "paulhb7/mistral_omnicat (OmniCAT)",
+    "repoUrl": "https://github.com/Paulhb7/mistral_omnicat",
+    "repoOwner": "Paulhb7",
+    "repoName": "mistral_omnicat",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 23,
+      "creativity": 22,
+      "usefulness": 18,
+      "alignment": 22,
+      "total": 85
+    },
+    "summary": "OmniCAT is an ambitious multi-agent OSINT (Open Source Intelligence) platform that orchestrates six specialist AI agents — covering maritime surveillance, aviation tracking, natural hazards, geopolitical conflicts, solar weather, and exoplanet research — via Mistral models on AWS Bedrock. The system features a real-time voice interface powered by Mistral Voxtral for STT and ElevenLabs for TTS, a cinematic Jarvis-inspired HUD with a Three.js voice-reactive particle orb, and four switchable 2D/3D map views including embedded NASA Eyes viewers. The project is technically dense, well-structured, and delivers an unusually polished demo experience for a 24-hour hackathon.",
+    "strengths": [
+      "**Breadth of live integrations**: Seven distinct external APIs integrated and functional — AISStream (WebSocket), NASA EONET, USGS, ACLED (OAuth bearer), GDELT, NASA DONKI, NASA NeoWs, NASA Exoplanet Archive (TAP/ADQL), arXiv (XML Atom feed), Nominatim, Open-Meteo. Each integration has proper async/await, timeout handling, and graceful degradation on failure.",
+      "**Agent-as-tools architecture**: The pattern in `agent_tools.py` of wrapping each `strands.Agent` instance with a `@tool` decorator so the orchestrator can invoke them as callable tools is elegantly implemented and extensible — the README even documents the five-step process to add a new agent.",
+      "**Two-tier model strategy**: Using Mistral Large for orchestration reasoning and Ministral-3B for specialist agents reflects genuine cost/quality reasoning, not just picking one model for everything.",
+      "**Real-time voice pipeline**: The full listen → Voxtral STT (WebSocket PCM s16le 16kHz) → orchestrator → ElevenLabs TTS → speak → listen loop with barge-in detection (RMS energy threshold + 3-frame confirmation + 500ms cooldown) is working end-to-end. This is a non-trivial real-time audio engineering challenge solved cleanly in `chat/page.tsx`.",
+      "**Three.js OmniOrb**: The 2800-particle + 700-halo Fibonacci sphere with real-time audio frequency deformation via `createMediaElementSource` → `AnalyserNode` is technically impressive and connects the voice interaction to a physical visualization feedback loop.",
+      "**Synthesized HUD sound effects**: `utils/sfx.ts` implements all UI sounds from first principles using Web Audio API oscillators, filtered noise buffers, slapback delays, and stereo detuning. No audio assets required — all sounds are synthesized at runtime.",
+      "**Streaming architecture**: The SSE event typing system (`content`, `tool_start`, `tool_end`, `agent_selected`, `location`, `data_*`) combined with the data bus pattern cleanly separates narrative LLM output from structured tool data, allowing the frontend to update map overlays and intel panels in real time.",
+      "**SQLite maritime persistence**: Maritime AIS data is stored in a local SQLite database with proper schema (vessel_positions, vessel_static, monitored_entities tables, indexed by MMSI and timestamp), allowing position history retrieval without re-querying the live stream.",
+      "**CI pipeline and Docker**: GitHub Actions CI runs backend tests (pytest), frontend build (Next.js), and Docker builds for both services. Dockerfiles for both backend and frontend are present.",
+      "**Documentation quality**: `docs/` contains six detailed markdown files (architecture, agents, data sources, deployment, frontend, voice pipeline). `AGENTS.md` is a complete codebase guide. The orchestrator system prompt is sophisticated — it includes precise disambiguation rules between solar_system_analyst and milky_way_analyst and even instructs the agent to never geocode celestial bodies."
+    ],
+    "improvements": [
+      "**Stale test suite**: `backend/tests/test_orchestrator.py` imports and tests `run_orchestrator` and `_run_agent` functions that no longer exist in `orchestrator.py` (the current implementation uses `stream_orchestrator` async generator instead). These tests would fail against the actual codebase, reducing the CI value.",
+      "**Aviation risk analysis is mocked**: `aviation_tools.py:check_aircraft_risk` has a hardcoded sanctions list of exactly two ICAO addresses (`[\"ABC123\", \"DEF456\"]`) and `_detect_anomalies` always returns `[]`. This is explicitly a stub, but it is presented as a functional capability in the README.",
+      "**Data bus is not session-safe**: `tools/data_bus.py` uses a module-level list (`_pending: list[dict] = []`) acknowledged in its own docstring to be unsafe for multi-worker or concurrent-session deployments. Under load with multiple simultaneous users, events would bleed across sessions.",
+      "**CORS wildcard**: `server.py` sets `allow_origins=[\"*\"]`, acceptable for a hackathon demo but noted for any production path.",
+      "**Frontend hardcodes localhost**: `use-chat.ts` defaults to `http://localhost:8000/stream` and `chat/page.tsx` hardcodes `ws://localhost:8000/ws/stt` and `http://localhost:8000/tts`. An environment variable or Next.js `NEXT_PUBLIC_API_URL` would be needed for any deployment.",
+      "**No streaming on TTS**: The TTS endpoint in `server.py` uses `httpx` to stream audio bytes from ElevenLabs to the client, but `chat/page.tsx` waits for the full response blob before playback (`await resp.blob()`). True streaming playback (using `MediaSource` API) would reduce time-to-first-audio.",
+      "**Missing milky_way agent test**: `test_agents.py` tests five of the six agent factories but omits a test for `create_milky_way_agent`."
+    ],
+    "specialChallenges": [
+      "The project uses Mistral Voxtral (`voxtral-mini-transcribe-realtime-2602`) for real-time WebSocket speech-to-text, which represents the voice/audio modality of the Mistral API. If there is a voice or multimodal special challenge at this hackathon, OmniCAT is a strong candidate. The ElevenLabs TTS integration with a custom voice built specifically for this project adds further depth to the voice use case. The AWS Bedrock compute usage also qualifies it clearly under the Track 1 AWS sponsorship."
+    ],
+    "flags": [],
+    "reportFile": "judge_paulhb7_mistral_omnicat.md"
+  },
+  {
+    "rank": 5,
+    "name": "vibers",
+    "repoUrl": "https://github.com/William-muskus/vibers-money",
+    "repoOwner": "William-muskus",
+    "repoName": "vibers-money",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 22,
+      "creativity": 21,
+      "usefulness": 20,
+      "alignment": 21,
+      "total": 84
+    },
+    "summary": "Vibers is an autonomous business creation platform that lets a user describe a business idea in plain language and immediately spawns a swarm of Mistral-powered AI agents (CEO, Security Director, CTO, Marketing Director, Product Director, Finance Director, and specialist roles like Community Manager) that work 24/7 to stand up the company. The stack is a TypeScript monorepo with four microservices: a Next.js frontend, an Express orchestrator, a custom Swarm Bus MCP server, and a Computer Use MCP server for browser automation. The project is ambitious, deeply integrated with Mistral's tooling, and delivers a cohesive real-time multi-agent product with genuine depth.",
+    "strengths": [
+      "Exceptionally well-architected for a hackathon: four clean microservices with typed interfaces, proper ESM modules, and no shortcuts visible in the core logic.",
+      "The Swarm Bus MCP is a custom, purpose-built Model Context Protocol server exposing 15+ tools (messaging, spawning, budget, escalation, scheduling, status) — not a wrapper around an existing library.",
+      "Hierarchy-enforced inter-agent messaging (`router.ts`): CEO can message anyone; department managers can only message their parent (CEO) or their own children; specialists can only message their parent. This prevents agent communication chaos in a multi-agent system.",
+      "Self-configuring agents: on first spawn, each director writes its own skills to `.vibe/skills/` and its own task list via `todo_add`, making the system extensible without centralized skill management.",
+      "Computer Use MCP is implemented from scratch using CDP (Chrome DevTools Protocol) with annotated screenshots (numbered element overlays drawn in canvas), iframe-aware element querying, and per-agent tab management — this is significant engineering depth.",
+      "Real test coverage: `vitest` suites for the orchestrator API, swarm bus store, registry, and budget tools. Tests use mocking correctly and cover both happy paths and error cases.",
+      "Production-readiness thinking: Dockerfiles for orchestrator and Swarm Bus, deployment docs for Vercel + Railway/Render/AWS Amplify, domain allowlisting for browser tools, session-based ownership/access control for businesses, and pause/resume controls for agent loops.",
+      "Thoughtful prompt engineering: the CEO mission prompt (`spawner.ts` lines 100–120) is detailed, covers edge cases (spawn order, not repeating questions, escalation policy, security guardrails), and is cleanly separated from the hackathon demo overlay via an env flag."
+    ],
+    "improvements": [
+      "All state (agent registry, inboxes, budgets, escalation pending, scheduled events) is in-memory only. A server restart loses all running businesses and agent state, which limits production viability.",
+      "The Stripe \"Wallet balance\" UI is acknowledged in the README as not yet populated from real payment events — the finance page is wired up but incomplete.",
+      "No authentication layer: the orchestrator API has session-based ownership for businesses but no user accounts or API keys; anyone who knows a business ID can call admin endpoints. The admin stream and stats endpoints are entirely unprotected.",
+      "The `businesses/` directory is committed as empty placeholder; runtime-created business workspaces are not persisted across deployments in any cloud-native way.",
+      "Computer Use browser automation (X/Twitter account creation, email setup) is inherently brittle against bot-detection, CAPTCHAs, and UI changes — the solve-captcha skill template acknowledges this but doesn't resolve it.",
+      "The `agentsMd.hbs` template has a discrepancy: non-CEO agents get the `ask_user_question` tool described, but there is no indication this tool routes correctly through the orchestrator's SSE model to the founder chat UI; it may silently do nothing.",
+      "No rate-limiting or cost caps at the orchestrator level — a misbehaving agent loop could exhaust the Mistral API key budget rapidly."
+    ],
+    "specialChallenges": [
+      "The project explicitly supports AWS Bedrock as an inference backend (`USE_AWS_BEDROCK`, `BEDROCK_GATEWAY_URL`), which aligns with the AWS track. The primary integration is Mistral API (Track 1 \"Anything Goes\"). No fine-tuning (Track 2) or on-device deployment (Track 3) components were identified."
+    ],
+    "flags": [],
+    "reportFile": "judge_william-muskus_vibers-money.md"
+  },
+  {
+    "rank": 5,
+    "name": "mistral",
+    "repoUrl": "https://github.com/TristanLecourtois/mistral-hack",
+    "repoOwner": "TristanLecourtois",
+    "repoName": "mistral-hack",
+    "track": "Fine-Tuning (W&B)",
+    "trackNumber": 2,
+    "scores": {
+      "technicity": 22,
+      "creativity": 21,
+      "usefulness": 22,
+      "alignment": 19,
+      "total": 84
+    },
+    "summary": "AuxilAI is an AI-powered emergency dispatch assistant designed to handle high call volumes during catastrophic events. The project combines a fine-tuned Mistral-7B model (LoRA + QLoRA with a custom Weave scorer regularization term) with a real-time backend that integrates Mistral's Voxtral ASR, ElevenLabs TTS, Twilio telephony, voice emotion analysis, geocoding, and live routing — all surfaced through an impressive dispatch dashboard. This is one of the most complete and technically ambitious projects a hackathon team could realistically produce in 24-36 hours.\n\n---",
+    "strengths": [
+      "The `WeaveRegularizedTrainer` class in `fine_tuning/fine_tuning.py` is a genuinely novel contribution: it subclasses HuggingFace `Trainer` and computes a weighted combination of coherence, fluency, toxicity, bias, and hallucination scores from W&B Weave at every training step, adding `(1 - avg_score) * regularization_lambda` to the cross-entropy loss. Token-level score weighting (anxiety=8, severity=9, coherence=7, seriousness=10) further focuses the model on the most important prediction targets.",
+      "The telephony integration in `backend/twilio_voice.py` is production-grade: raw mulaw audio is decoded from Twilio WebSocket frames, VAD (RMS thresholding with configurable speech/silence chunk counts) isolates utterances, Voxtral and SpeechBrain inference run in parallel via `asyncio.gather`, barge-in cancellation stops TTS mid-playback, and an SMS summary is sent on call close.",
+      "`backend/emergency_services.py` has a robust multi-endpoint Overpass fallback chain, Haversine nearest-neighbor search, and dual OSRM/Valhalla routing with polyline decoding — all of which are non-trivial to implement correctly.",
+      "The synthetic dataset pipeline is thorough: `data_gen/prompt_config.json` contains a rich prompt template engineering diverse score distributions, varying conversation lengths, and scenario-specific instructions for 7 emergency types. 2,844 examples with 80/20 train/test split were produced.",
+      "The frontend `app.js` implements a FLIP animation algorithm for sidebar card reordering, custom SVG radar chart with requestAnimationFrame-based easing, animated counters, OpenStreetMap integration with custom severity markers, and routing polylines — well above typical hackathon front-end quality.",
+      "Actual GPU training runs are evidenced by committed W&B run artifacts with metadata showing RTX 3060 and RTX 3090 hardware, CUDA 12.6/12.8, and proper LoRA config (r=16, alpha=32, all attention/MLP projection layers targeted, QLoRA NF4 quantization).",
+      "---"
+    ],
+    "improvements": [
+      "The W&B `wandb-summary.json` files for all 19 training runs contain only `_runtime` metadata with no `train/loss`, `eval/loss`, or step counts — strongly suggesting no run reached the first logging step. The backend uses `ministral-8b-latest` (base API model), not a fine-tuned checkpoint. A successful fine-tuning run with a deployed adapter would have significantly strengthened the project.",
+      "`backend/geocoding.py` is missing its `GOOGLE_API_KEY` import/initialization — the file references `GOOGLE_API_KEY` without ever importing it from `os.getenv` or dotenv, which would cause a `NameError` at runtime. This appears to be a truncated or accidentally committed file.",
+      "`requirements.txt` lists only three packages (`unicorn`, `fastapi`, `speechbrain`), omitting `mistralai`, `python-dotenv`, `inflect`, `googlemaps`, `twilio`, `peft`, `transformers`, `torch`, `numpy`, `audioop`, `requests`, and many others. This makes the project difficult to reproduce.",
+      "The `test_depoly/` folder contains a toy `MyModel` (a 10-input linear classifier) with no connection to the Mistral fine-tuning work, suggesting it was scaffolding for an AWS SageMaker deployment path that was abandoned.",
+      "There is no authentication, rate limiting, or persistent storage — `calls_db` is an in-memory Python dict that resets on every restart, which is fine for a demo but worth noting.",
+      "The `notebooks/` directory contains only a `.gitkeep` placeholder; exploratory analysis of training data quality or model evaluation notebooks would have been valuable.",
+      "The system prompt in `prompts.py` hard-codes English-only responses (`ALWAYS reply in English`), which conflicts with the multilingual capability of Voxtral and the claim in the README about handling diverse populations.",
+      "---"
+    ],
+    "specialChallenges": [
+      "The project is a strong candidate for the Track 2 (Fine-Tuning / W&B) track given the custom `WeaveRegularizedTrainer` that creatively uses W&B Weave scorers as a regularization term during training — directly leveraging the W&B sponsor's tooling in a novel way. The presence of W&B run artifacts with actual GPU metadata further supports eligibility. However, the lack of confirmed training completion and deployed fine-tuned model weights is a material gap for the track judging criteria."
+    ],
+    "flags": [],
+    "reportFile": "judge_tristanlecourtois_mistral-hack.md"
+  },
+  {
+    "rank": 5,
+    "name": "shipaleks/mistral",
+    "repoUrl": "https://github.com/shipaleks/mistral-hackaton",
+    "repoOwner": "shipaleks",
+    "repoName": "mistral-hackaton",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 22,
+      "creativity": 21,
+      "usefulness": 20,
+      "alignment": 21,
+      "total": 84
+    },
+    "summary": "Eidetic is an autonomous qualitative research system that conducts adaptive voice interviews via ElevenLabs, processes transcripts with a multi-agent Mistral pipeline (Designer → Analyst → Synthesizer), and evolves its interview script after every conversation based on accumulating evidence. The system implements a simplified version of grounded theory methodology — extracting causal Factor → Mechanism → Outcome propositions, tracking convergence, retroactively scanning all evidence against new hypotheses, and producing a structured research report. It was built as a solo effort during the 48-hour hackathon and is accompanied by a separate optional fine-tuning pipeline using Voxtral for transcription.",
+    "strengths": [
+      "The core pipeline loop (webhook → Analyst → Designer → ElevenLabs PATCH) is fully implemented with idempotency checks, duplicate-conversation deduplication, and graceful fallback at each LLM failure point.",
+      "The `ScriptSafetyGuard` (`services/script_safety.py`) is a thoughtful safety layer that strips personal references (\"earlier you mentioned\", \"you said\") from LLM-generated interview prompts before they reach the voice agent, with topic-drift detection using Jaccard overlap on research-question tokens.",
+      "The `SynthesizerAgent` includes a grounding verification step that cross-checks every quoted string in the generated report against the actual evidence store using sequence matching and token overlap, preventing hallucinated quotes from appearing in the output.",
+      "The fine-tuning pipeline (`training/`) is complete end-to-end: Voxtral transcription with chunked fallback for large files, two-role speaker normalization, Mistral Large-based example extraction, PII/Yandex scrubbing with regex + LLM verification, JSONL formatting, and the Mistral fine-tuning job launcher with polling and artifact persistence.",
+      "The visualization backend (`services/visualization.py`) builds a rich hypothesis map — nodes typed as `hypothesis`, `evidence`, and `candidate_cluster`; edges typed as LLM-confirmed or heuristic with opacity/style metadata; weighted Jaccard similarity scoring for unassigned evidence grouping — all served via a single API endpoint with SSE push on each interview.",
+      "16 test files covering pipeline idempotency, SSE event emission, HMAC signature verification, webhook payload parsing robustness, script safety enforcement, synthesizer grounding rejection, training pipeline stages, and visualization model output.",
+      "The commit history (20 commits across 2 days, Feb 28 – Mar 1) shows consistent forward progress throughout the hackathon with meaningful feature names, not a single late-night dump.",
+      "The PRD and ARCHITECTURE documents are thorough enough to serve as a real product spec, with cost estimates, fallback plans, convergence thresholds, and judging-criteria self-assessment."
+    ],
+    "improvements": [
+      "The described React + d3.js frontend with animated knowledge graph (`ARCHITECTURE.md` mentions `KnowledgeGraph.jsx`, `ConvergenceMeter.jsx`, `ScriptDiff.jsx`, etc.) is replaced by static HTML files (`dashboard/projects.html`, `dashboard/graph.html`) — the demo visualization is functional but significantly simpler than the architecture document promises.",
+      "The LLM client is described as provider-agnostic but only has a Mistral/OpenAI-compatible path; the Anthropic adapter is explicitly deferred (\"Anthropic needs adapter, but for hackathon = Mistral only\"). The config still lists provider as a field, creating a slight mismatch between design and implementation.",
+      "The analyst system prompt in `prompts/analyst_system.txt` (the file actually used at runtime) is significantly more minimal than the detailed version in `PROMPTS.md`, which contains the full grounded theory guidance. It is unclear whether the runtime behavior fully matches the intended methodology.",
+      "Proposition merge logic (two propositions with >60% evidence overlap) is described in detail in the PRD and PROMPTS.md but there is no `merge` field in the `AnalysisResult` model (only `prunes`); the analyst coercion code does not handle merge payloads. This appears to be a partially implemented feature.",
+      "The fine-tuning pipeline has no actual fine-tuned model artifact or evaluation results demonstrated in the repo — it is a well-built pipeline but a pipeline without demonstrated output at hackathon time.",
+      "There are no integration tests that spin up the full FastAPI server; all tests are unit-level with fakes/mocks. A short e2e smoke test against a real project lifecycle would increase confidence.",
+      "The `training/common.py` `MistralClient` is a second, separate implementation of the HTTP client with its own retry logic, duplicating `agents/llm_client.py`. A shared base client would reduce maintenance surface."
+    ],
+    "specialChallenges": [
+      "**Best Use of ElevenLabs** (stated goal in PRD.md): Strong candidate. The system uses ElevenLabs Conversational AI with Mistral as the Custom LLM backend, implements dynamic post-call webhook processing, and PATCHes the agent system prompt after every interview with a freshly computed script. The voice interview loop is the core product experience, not a peripheral feature.",
+      "**Track 2 (Fine-Tuning, W&B)**: Partial eligibility only. The fine-tuning pipeline code is complete but no actual fine-tuned model or training results are demonstrated in the repository. The W&B integration is mentioned in the PRD but not implemented in code."
+    ],
+    "flags": [],
+    "reportFile": "judge_shipaleks_mistral-hackaton.md"
+  },
+  {
+    "rank": 5,
+    "name": "Beyond",
+    "repoUrl": "https://github.com/pierreadorni/Beyond-All-Reason",
+    "repoOwner": "pierreadorni",
+    "repoName": "Beyond-All-Reason",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 22,
+      "creativity": 21,
+      "usefulness": 19,
+      "alignment": 22,
+      "total": 84
+    },
+    "summary": "This project integrates a Mistral-powered AI co-commander into Beyond All Reason (BAR), an open-source real-time strategy game built on the Spring/Recoil engine. The participant forked the game repository and built a full-stack LLM-agent pipeline: a Lua widget exposing an in-game HTTP server, a Python agent using Strands + Mistral that reads game state and issues unit commands, and voice I/O using Mistral's Voxtral real-time speech-to-text and ElevenLabs TTS. Players can direct the AI ally by typing `@agent` or `!` in game chat, or by speaking via a push-to-talk hotkey, and the AI responds in character and executes multi-step RTS commands.",
+    "strengths": [
+      "The Lua HTTP server (`agent_bridge.lua`) is entirely self-contained, implementing its own JSON encoder/decoder to work around Spring widget sandbox restrictions — a non-trivial engineering decision made correctly.",
+      "The `agent_bridge_relay.lua` gadget uses the Spring engine's synced/unsynced message-passing architecture correctly, ensuring unit commands issued by the LLM are processed in the authoritative simulation tick.",
+      "The `reserve_and_build` composite tool atomically reserves a unit, places a build order, and registers an idle-event watcher in one call, preventing the native AI from overriding in-flight LLM orders — a subtle and well-executed design.",
+      "The TTS pipeline (`_speak` in `bar_agent.py`) streams PCM from ElevenLabs at 16 kHz, mixes a looping radio-crackle SFX in real time, and feeds per-chunk RMS amplitude back to the in-game portrait shader — a production-quality audio engine written from scratch for a hackathon.",
+      "Voxtral real-time transcription (`voxtral-mini-transcribe-realtime-2602`) is integrated via a persistent WebSocket, kept warm between key presses to minimize latency — shows awareness of the Mistral API's real-time capabilities.",
+      "The system prompt is thoughtfully designed for an RTS co-commander persona (military tone, map-ping usage, `owner='bot'` guardrails, multi-step task continuation instructions).",
+      "The commit history shows steady, iterative development over the full 24-hour hackathon window, starting with `basic command using game chat` and ending with polished voice I/O and Mistral branding."
+    ],
+    "improvements": [
+      "The `SpeechToTextDaemon.py` file contains a hardcoded API key (`API_KEY = \"ybeqehOv7gWxBX5mycJqUycR0U7Wfgdv\"`), which is a security concern even though the merged `bar_agent.py` correctly reads from the environment variable.",
+      "There is no README, demo video, or setup guide for the hackathon-specific components; evaluation requires significant domain knowledge of the BAR/Spring engine ecosystem.",
+      "The `agent_bridge.lua` widget currently exposes its HTTP server on `0.0.0.0` (all interfaces) rather than `127.0.0.1`, which is a minor security risk on networks where other players could reach the host.",
+      "The dependency on ElevenLabs for TTS introduces an external paid service; a fallback TTS using Mistral or an open-source model would make the project more self-contained.",
+      "The project does not include integration tests or CI; the `tools/headless_testing/` infrastructure already present in the upstream BAR repo could have been leveraged.",
+      "The `gui_tts_display.lua` source contains a deliberate filename typo (`aly_commander_2.png` instead of `ally_commander_2.png`) that is noted as intentional, which may cause the calm-pose portrait to fail silently on case-sensitive filesystems."
+    ],
+    "specialChallenges": [],
+    "flags": [],
+    "reportFile": "judge_pierreadorni_beyond-all-reason.md"
+  },
+  {
+    "rank": 9,
+    "name": "21_DnD",
+    "repoUrl": "https://github.com/Matthieu-Andre/21_DnD",
+    "repoOwner": "Matthieu-Andre",
+    "repoName": "21_DnD",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 22,
+      "creativity": 21,
+      "usefulness": 20,
+      "alignment": 20,
+      "total": 83
+    },
+    "summary": "21_DnD is an adaptive real-time music soundtrack engine for tabletop RPG (D&D) sessions. It listens to the table via a browser microphone, transcribes speech using Mistral's Voxtral model, classifies the narrative mood using a Strands-based Mistral agent, generates live music via Google's Lyria Realtime API, and streams that music back to the browser over WebSocket — all in one continuous pipeline. The project is ambitious, technically complete, and clearly demonstrates the result of sustained architectural thinking across the hackathon period.",
+    "strengths": [
+      "End-to-end working pipeline: browser mic capture → Voxtral transcription → Strands mood agent → Mistral music prompt planner → Lyria Realtime music generation → WebSocket audio stream back to browser.",
+      "Multiple Mistral models used meaningfully at different stages of the pipeline, not just as a single chatbot call.",
+      "The `lyria_service.py` crossfade implementation (`interpolate_palettes` + `_crossfade_to_palette`) is genuinely sophisticated — it interpolates weighted prompt dictionaries over configurable steps to create smooth musical transitions.",
+      "The Strands mood classifier (`mood_agent.py`) is carefully designed: it tries tool-calling first and falls back to an inline agent if structured output fails, with specific exception handling for `MaxTokensReachedException`.",
+      "The `music_prompt_agent.py` planner makes a well-reasoned decision about when to update the music — only on mood changes, after a minimum number of new utterances, or after a cooldown — avoiding thrashing.",
+      "The ElevenLabs \"DNA\" mode is a creative hack: using ElevenLabs `compose_detailed()` exclusively for its JSON metadata (composition plan, genres, styles) rather than its audio output, then feeding that structured data as weighted prompts into Lyria.",
+      "The frontend `app.js` implements a full PCM audio player from scratch using `ScriptProcessorNode` with underrun protection, buffer management, and WebSocket-based chunk streaming — no audio library dependency.",
+      "The `unused-dev/` folder and the two planning documents (`lyria-integration-plan.md`, `strands_integration_plan.md`) reveal a disciplined phased development process: they wrote the architecture plan and then executed it.",
+      "The SVG waveform visualizer in `app.js` uses a custom quadratic Bézier closed-path renderer with per-sample displacement history and mood-scaled displacement amplitude — a polished detail.",
+      "Mood-driven CSS theming: each mood label (default, tense, action, boss, mystery, victory) has its own CSS custom property overrides that change the ring color and background gradient."
+    ],
+    "improvements": [
+      "There is no README in the repository root. A first-time user has no idea how to install dependencies, configure API keys, or run the server.",
+      "No tests of any kind are present. Given the async complexity of the session manager and music loop, even basic smoke tests would increase confidence.",
+      "The Google Lyria API is still experimental (`models/lyria-realtime-exp`, `api_version: \"v1alpha\"`), making the project dependent on a very early-access service that may not be reproducible by judges without special access.",
+      "The `lyria_eleven_child.py` file (the original CLI prototype) is still committed alongside the refactored `lyria_service.py`. The `unused-dev/` folder contains several files (`live_asr_sse.py`, `original_stt.py`, `other_stt.py`, etc.) indicating significant exploration that was not cleaned up.",
+      "Session management only allows one active session at a time, which is by design but should be noted as a limitation for multi-table deployments.",
+      "The frontend uses `ScriptProcessorNode`, which is deprecated in favor of `AudioWorkletNode`. The code comments acknowledge this but do not address it.",
+      "Mood classification fires on every new utterance with no minimum word count threshold — a very short transcript fragment (\"Uh\") could trigger an unnecessary LLM call.",
+      "There is no reconnection logic for the Lyria WebSocket if it drops during a session; the error is logged and the music silently stops.",
+      "The `circle-lab.html` file in `web/` appears to be an unused experiment that was committed but not linked from the main UI."
+    ],
+    "specialChallenges": [
+      "The project makes meaningful and non-trivial use of the Mistral API at multiple pipeline stages (Voxtral STT, Strands mood classification with structured output, music prompt generation, and scene mapping). It uses `voxtral-mini-latest`, `mistral-small-latest`, and `open-mistral-7b`. This may qualify for any Mistral-specific challenge rewards related to creative multi-model API usage. No specific fine-tuning or on-device deployment is present, so Track 2 and Track 3 special awards do not apply."
+    ],
+    "flags": [],
+    "reportFile": "judge_matthieu-andre_21_dnd.md"
+  },
+  {
+    "rank": 10,
+    "name": "Promus",
+    "repoUrl": "https://github.com/stickerdaniel/promus",
+    "repoOwner": "stickerdaniel",
+    "repoName": "promus",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 22,
+      "creativity": 20,
+      "usefulness": 22,
+      "alignment": 18,
+      "total": 82
+    },
+    "summary": "Promus is an AI-powered professional task manager built as a Kanban board where an LLM agent autonomously executes tasks involving email, LinkedIn, and messaging — searching contacts, drafting messages, and sending communications on behalf of the user. The core innovation is a sandboxed code-execution architecture where the agent dynamically writes and runs Unipile SDK TypeScript code at runtime rather than relying on pre-built API wrappers. The project is exceptionally well-engineered for a 24-hour hackathon, shipping a full SaaS platform with auth, billing, admin panel, i18n, real-time DB, eval harness, and a polished frontend.",
+    "strengths": [
+      "The sandboxed VM executor (`script-executor.ts`) is production-quality: esbuild TS transpilation, method blocklist for destructive SDK operations, 15-second timeout, captured console output, and 30+ unit tests covering sandbox isolation, error propagation, timeout, and SDK facade exposure.",
+      "Three full iterations of a W&B Weave eval pipeline (plan quality, code quality, step overlap, SDK call accuracy) with documented improvements from 0% to ~85-92% on key metrics — rare discipline at a hackathon.",
+      "Convex schema (`schema.ts`) is carefully designed with 12 distinct tables and thoughtful indexing for support threads, audit logs, billing notifications, and Unipile OAuth flows — not throwaway demo data.",
+      "The `saveBoard` mutation in `todos.ts` implements atomic task change detection that automatically triggers agent threads on new tasks or user-initiated moves/edits, creating a seamless reactive loop.",
+      "Full SaaS platform shipped: email/password + Google OAuth + passkeys auth (Better Auth), Stripe billing via Autumn, Resend email with webhook tracking, PostHog analytics with Cloudflare proxy fallback, Tolgee i18n (EN/DE/ES/FR), admin panel with audit logs and impersonation, Playwright E2E tests.",
+      "Svelte 5 runes syntax used correctly throughout (`$state`, `$derived`, `$effect`, `$props`), demonstrating familiarity with cutting-edge tooling.",
+      "The \"no emoji in agent output\" styling constraint and concise note format (2-4 bullets) in `agent.ts` shows attention to UX quality in AI-generated content.",
+      "Security-conscious: destructive Unipile methods (`delete`, `reconnect*`, `update`) are blocklisted in `ACCOUNT_BLOCKLIST`/`EMAIL_BLOCKLIST` before the VM facade is injected."
+    ],
+    "improvements": [
+      "The primary production agent uses Claude Opus via AWS Bedrock rather than a Mistral model, which weakens alignment with the Mistral hackathon's spirit. Devstral is used only in the offline eval, not in the live agent.",
+      "The `llmProvider.ts` file uses `any` type casts (`getTaskLanguageModel() as any`) to bridge the Convex Agent SDK with the Bedrock adapter, suggesting incomplete type integration.",
+      "The Daytona sandbox integration described in the README and `plan.md` (Mistral Vibe CLI running inside a cloud sandbox) appears to be the originally planned architecture but is not present in the shipped code — the actual executor is a Node VM on the SvelteKit server. The README's reference to \"Daytona sandbox + Mistral Vibe CLI (Devstral)\" as the Executor does not match the code.",
+      "The eval harness simulates the orchestrator/executor as two separate Devstral calls, but the production agent is a single Claude Opus agent with tools — the eval does not actually test the production code path.",
+      "`supportAgent` in `src/lib/convex/support/agent.ts` has outdated instructions referencing \"single agent architecture: Claude Opus\" and \"Claude Opus generates and executes Unipile SDK code directly in a sandboxed Node VM\" — partially reflecting a prior architecture rather than the current two-agent design.",
+      "No rate limiting is applied to the `triggerAgentForNewTask` action, meaning creating many tasks quickly could generate unbounded Bedrock API costs.",
+      "The community chat feature is functional but lightly integrated with the core value proposition — it reads more as a template feature than a deliberate product decision."
+    ],
+    "specialChallenges": [
+      "The project uses W&B Weave for eval tracing and scoring (Track 2 / W&B challenge), though it does not fine-tune any Mistral models — the eval is an inference-based LLM-as-judge loop, not fine-tuning. It uses AWS Bedrock as its primary LLM inference backend (Track 1 / AWS challenge). No on-device or edge deployment is present (Track 3 / NVIDIA not applicable).",
+      "**W&B Track 2 partial eligibility**: The project uses W&B Weave for agent evaluation and has a documented self-improvement loop, but does not perform fine-tuning. This likely does not qualify for the Fine-Tuning track prize but may be relevant for any W&B observability or eval-focused side challenges."
+    ],
+    "flags": [
+      "No Mistral"
+    ],
+    "reportFile": "judge_stickerdaniel_promus.md"
+  },
+  {
+    "rank": 10,
+    "name": "lesphinx (Le Sphinx)",
+    "repoUrl": "https://github.com/edouardfoussier/lesphinx",
+    "repoOwner": "edouardfoussier",
+    "repoName": "lesphinx",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 22,
+      "creativity": 21,
+      "usefulness": 20,
+      "alignment": 19,
+      "total": 82
+    },
+    "summary": "Le Sphinx is a voice-powered 20 Questions guessing game where players interrogate an ancient AI Sphinx about a secret famous person from a curated database of 161 characters. The game uses Mistral Large as a single \"Full LLM\" handler that simultaneously interprets questions, resolves yes/no answers against the secret character's profile, and generates theatrical in-character responses. It features solo, human-vs-human duel, and human-vs-AI duel modes (the latter using Amazon Bedrock AI opponents with distinct personalities), ElevenLabs TTS for voice, a global leaderboard, and an MCP server that lets AI agents play programmatically via Claude Desktop or Cursor.",
+    "strengths": [
+      "Production-deployed at thesphinx.ai with a real user-facing product — not just a demo",
+      "220 tests across 10 test files, covering the full stack from character selection to LLM integration — exceptional for a 24-hour hackathon",
+      "The `full_llm_handler.py` safety pipeline is layered and thoughtful: pre-call surrender detection, post-call name-leak sanitization, Unicode corruption repair for French accented characters, and JSON enum validation",
+      "MCP server (`FastMCP` with stdio + SSE) allows AI agents to play the game programmatically, creating a unique \"Mortals vs. Machines\" leaderboard feature",
+      "Character database of 161 curated entries with 12-15 facts each, enriched via Mistral, covering 9 thematic domains and 3 difficulty tiers — this is significant content work",
+      "Deployed with Google Cloud VM + Caddy + systemd, including a production deployment script and Caddyfile"
+    ],
+    "improvements": [
+      "Core Mistral integration uses the Mistral API directly (not AWS Bedrock), which partially misaligns with the Track 1 \"AWS\" sponsor requirement — the AI opponents use Bedrock but not the main game brain",
+      "The single-LLM architecture is elegant but means every question requires a full Mistral Large call (high latency and cost at scale); a hybrid approach with rule-based filtering for common question patterns would be more efficient",
+      "The `_repair_unicode()` function is a creative workaround for JSON encoding corruption, but the root cause (Mistral encoding accented characters as digit substitutes in JSON responses) suggests an encoding issue that could be fixed at the API call level with `ensure_ascii=False` or `response_format` adjustments",
+      "The Vanilla HTML/JS frontend (`lesphinx/static/index.html`) means no component architecture or type safety — a React or Vue frontend would be more maintainable",
+      "The AI opponent duel mode requires AWS Bedrock credentials, making it inaccessible without specific setup"
+    ],
+    "specialChallenges": [
+      "**Best Voice Use Case (ElevenLabs):** Strong candidate. ElevenLabs TTS is central to the experience — the Sphinx speaks all answers in a deep theatrical voice via `eleven_flash_v2_5`, and AI opponent personas each have distinct voices. Voice I/O (Web Speech API STT + ElevenLabs TTS) is the primary interaction modality. This is one of the most developed voice-use-case implementations in this batch.",
+      "**Best use of Mistral Vibe:** The MCP server enables Mistral Vibe (and Claude, Cursor) agents to play the game. The `MCP_SERVER.md` documentation explicitly mentions Mistral Vibe as a supported client. This could qualify.",
+      "**The Hackathon's Next Unicorn (Raise):** The combination of a live deployed product, a curated 161-character database, multi-mode gameplay, global leaderboard, and an MCP integration for AI agent benchmarking suggests real startup potential in the educational games / AI evaluation space."
+    ],
+    "flags": [],
+    "reportFile": "judge_edouardfoussier_lesphinx.md"
+  },
+  {
+    "rank": 12,
+    "name": "qveys/Mistral",
+    "repoUrl": "https://github.com/qveys/Mistral-Worldwide-Hackathon-2026",
+    "repoOwner": "qveys",
+    "repoName": "Mistral-Worldwide-Hackathon-2026",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 21,
+      "creativity": 19,
+      "usefulness": 20,
+      "alignment": 21,
+      "total": 81
+    },
+    "summary": "EchoMaps is a voice-first project planning application that transforms spoken or typed \"brain dumps\" into structured, AI-generated roadmaps in real time. The system uses Voxtral (Mistral's real-time speech-to-text WebSocket API) for transcription and Mistral Large 3 via AWS Bedrock for roadmap structuring, with a polished Next.js 16 frontend and a typed Express/TypeScript backend. The project is technically well-executed for a 48-hour hackathon, featuring dependency graph visualization, topological cycle detection, multi-view project pages, and a shared monorepo schema package.",
+    "strengths": [
+      "Real-time PCM audio capture, downsampling, and WebSocket streaming to Voxtral is a technically challenging pipeline implemented cleanly in both frontend (`useVoxtralSTT.ts`) and backend (`VoxtralService`, `TranscribeController`).",
+      "Zod schema validation of all LLM outputs with an automatic retry prompt (`buildRetryPrompt`) when parsing fails is a mature LLM integration pattern that demonstrates reliability awareness.",
+      "Dependency cycle detection via DFS (`hasCycle` in `dependencyGraph.ts`) prevents the AI from generating invalid task graphs — a thoughtful safety check.",
+      "Monorepo architecture with a shared `@echomaps/shared` package ensures type safety across frontend and backend using a single source of truth for schemas.",
+      "Four visualization modes on the project page (grid, dependency graph, knowledge graph, planning timeline) with ReactFlow + dagre auto-layout show real frontend craftsmanship.",
+      "The knowledge graph uniquely includes AI-generated resource nodes (docs, tutorials) attached to tasks, creating a richer learning artifact from a plain brain dump.",
+      "Bilingual support (English/French) via `next-intl` with complete message catalogs.",
+      "Docker support and AWS infrastructure configuration (S3, Bedrock, Amplify) are production-oriented additions for a hackathon.",
+      "The `revisionHistory` field in the schema and `POST /revise` endpoint show a design orientation toward iterative refinement rather than one-shot generation."
+    ],
+    "improvements": [
+      "Passwords in `auth.controller.ts` are stored and compared in plaintext in `data/users.json` — a significant security oversight. Even in a hackathon, bcrypt hashing should be applied.",
+      "The `handleRevision` callback in the project page (`app/[locale]/project/[id]/page.tsx`) is a no-op (`useCallback<(revision: string) => void>(() => {}, [])`), meaning the revision input UI is rendered but does not actually call `POST /revise`. This is an incomplete feature.",
+      "The activity feed, dashboard statistics, and timeline page use hardcoded mock data from the i18n translation files and `activity.constants.ts` rather than real data from the backend.",
+      "No automated tests are present (`\"test\": \"echo \\\"Error: no test specified\\\" && exit 1\"`), which limits confidence in correctness especially for the graph algorithms and LLM parsing logic.",
+      "The `topologicalSort` function is implemented but never called at runtime — only `hasCycle` is invoked. The sort could be used to present tasks in execution order.",
+      "There is no rate limiting or cost-control mechanism on the Bedrock endpoints, which would be important in any real deployment.",
+      "A live demo URL is not provided, making it impossible to verify the running state of the application.",
+      "Audio processing uses the deprecated `ScriptProcessorNode` API (noted in a comment in the code itself) instead of the recommended `AudioWorkletNode`, which may cause issues in future browsers."
+    ],
+    "specialChallenges": [],
+    "flags": [],
+    "reportFile": "judge_qveys_mistral-worldwide-hackathon-2026.md"
+  },
+  {
+    "rank": 12,
+    "name": "webl",
+    "repoUrl": "https://github.com/Hamza-Rivon/webl-hackathon",
+    "repoOwner": "Hamza-Rivon",
+    "repoName": "webl-hackathon",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 22,
+      "creativity": 18,
+      "usefulness": 19,
+      "alignment": 22,
+      "total": 81
+    },
+    "summary": "WEBL is an AI-powered video editing platform that automates the entire post-production pipeline: upload a voiceover and B-roll clips, and the system uses Mistral Large 3 (via AWS Bedrock) and Voxtral (via AWS Bedrock) to transcribe, correct, semantically segment, and creatively plan how to cut B-roll to match the voiceover — replacing hours of manual editing with an automated, narrative-aware AI workflow. The system is a monorepo with an Expo React Native mobile app, an Express API with Socket.IO, BullMQ background workers (18+ job types), PostgreSQL + pgvector for embeddings, FFmpeg for rendering, and Mux for video delivery.",
+    "strengths": [
+      "Full production-grade monorepo architecture with 4 apps, 2 packages, BullMQ background job orchestration, and 18+ specialized job types — this goes well beyond typical hackathon scaffolding",
+      "AWS Bedrock is the primary inference provider for both LLM and transcription (Voxtral + Mistral Large 3 via Converse API), with genuine dual-credential support (bearer token or IAM)",
+      "The multi-phase AI pipeline mirrors a real professional video editing workflow: Voxtral for word-level timestamps → Mistral for correction → segmentation → B-roll chunk enrichment → pgvector similarity search → creative edit planning → cut plan generation → FFmpeg render",
+      "Expo React Native mobile app (`apps/mobile/`) for cross-platform access",
+      "The `lib/bedrock.ts` service is clean, well-logged (token usage, latency, response length), and handles authentication edge cases correctly",
+      "Multi-provider fallback architecture (`AI_PROVIDER` env var with mistral/gemini/openai/runpod options) shows production engineering maturity"
+    ],
+    "improvements": [
+      "No tests visible in the repository — the `apps/workers/src/jobs/` pipeline has no unit or integration tests, making it difficult to verify correctness of the AI stages",
+      "The README's architecture diagrams reference `mistral.magistral-small-2509` in the default Bedrock model env var, but calls it \"Mistral Large 3 (675B)\" — this is inconsistent (magistral-small is not 675B), suggesting the model configuration may have changed during development",
+      "The mobile app (`apps/mobile/`) shows significant Vibe agent skill files (`.agents/skills/vercel-react-native-skills/rules/*.md` — 20+ rule files) and Cursor rules (`.cursor/rules`), indicating heavy AI-assisted development; the skill files are external dependencies rather than project code",
+      "The `video_analysis` component using Qwen3-VL via Runpod is an additional dependency that complicates the setup without being a core Mistral use case",
+      "Database setup requires Neon (PostgreSQL) with pgvector extension, Upstash Redis, Mux account, and Clerk — significant infrastructure requirements that make local setup complex",
+      "No deployed demo URL is provided, making it impossible to test the actual video editing output"
+    ],
+    "specialChallenges": [
+      "**Best Voice Use Case (ElevenLabs):** Not applicable — voice is not a user interaction modality here; Voxtral is used for transcription of uploaded audio content, not conversational interaction.",
+      "**The Hackathon's Next Unicorn (Raise):** Strong candidate. AI video editing automation addresses a large, paid market (content creation, marketing agencies, social media). The full pipeline automation from voiceover to edited video is a genuinely valuable product. The production-grade architecture suggests the team is thinking beyond a hackathon demo."
+    ],
+    "flags": [],
+    "reportFile": "judge_hamza-rivon_webl-hackathon.md"
+  },
+  {
+    "rank": 14,
+    "name": "mathisdev7/mistral",
+    "repoUrl": "https://github.com/mathisdev7/mistral-hackathon-paris",
+    "repoOwner": "mathisdev7",
+    "repoName": "mistral-hackathon-paris",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 20,
+      "creativity": 19,
+      "usefulness": 21,
+      "alignment": 20,
+      "total": 80
+    },
+    "summary": "SpokeAI is a voice-first AI language tutoring application that lets users practice speaking a foreign language through immersive roleplay scenarios. It integrates Mistral's `mistral-large-latest` model for conversational AI and Voxtral (`voxtral-mini-latest`) for speech-to-text transcription, and combines these with ElevenLabs TTS and a Supermemory-backed long-term learner profile. The application is a complete, multi-page Next.js web app with authentication, a PostgreSQL database, and a well-thought-out session lifecycle.",
+    "strengths": [
+      "Genuine end-to-end voice interaction loop: browser mic capture → Voxtral STT → Mistral Large → ElevenLabs TTS → playback, all wired together correctly",
+      "Auto voice mode with WebAudio `AnalyserNode`-based silence detection (2s threshold, RMS measurement) is technically non-trivial and enhances UX significantly",
+      "System prompt engineering is exceptionally detailed and purpose-built for TTS: no markdown, no stage directions, only plain spoken text, with a controlled whitelist of expression tags",
+      "Dual-layer memory architecture (short-term PostgreSQL conversations/messages, long-term Supermemory profile) is well-designed and implemented cleanly in `lib/memory.ts`",
+      "Multi-step agentic tool-calling with proper session-state derivation from message parts, including handling for the `__INIT__` synthetic message pattern to trigger the greeting without persisting a dummy user message",
+      "Topic card generation uses `generateObject` with Zod schema validation and has a robust fallback chain (AI → text parse → JSON repair → static pool) in `lib/session-cards-actions.ts`",
+      "Four database migrations (`drizzle/`) demonstrate iterative, real development during the hackathon rather than a single upfront schema",
+      "Code quality is consistently high: proper TypeScript types throughout, well-structured server actions, correct use of Next.js App Router conventions (server components for data fetching, client components for interactivity)",
+      "Duplicate TTS suppression logic using canonical text signatures and a 20-second deduplication window prevents re-speaking on re-renders",
+      "Settings page allows users to change target language, native language, motivation, tutor language mode, and voice gender after onboarding"
+    ],
+    "improvements": [
+      "The `@supermemory/tools` package is listed as a dependency but its `tools` feature does not appear to be used — only the basic `supermemory` SDK is used. The memory layer uses plain string serialization (`Level: X\\nStrengths: A | B`) rather than structured vector search, which limits semantic recall capability",
+      "Voice auto-mode only detects silence after speech is detected; there is no visual waveform or amplitude indicator, making it harder for users to know if their mic is picking up audio correctly",
+      "The session state derivation (scanning all message parts for `start_session` / `end_session` tool outputs) is done on both the client (`chat-interface.tsx`) and the server (`app/api/chat/route.ts`) independently using similar but separately maintained logic — a shared utility would reduce the risk of divergence",
+      "The `canStartSession` detection in `app/api/chat/route.ts` uses a hardcoded regex (`/\\b(yes|yeah|yep|ok|okay|sure...)\\b/`) which may miss non-English confirmations in multi-language contexts, or trigger on unintended utterances",
+      "No rate limiting or abuse protection on the `/api/chat`, `/api/speech`, or `/api/transcribe` endpoints",
+      "Only two voices are hardcoded by ElevenLabs voice ID (`93nuHbke4dTER9x2pDwE` for male, `21m00Tcm4TlvDq8ikWAM` for female); no language-matched voice selection, which may produce accented or mismatched TTS for non-English target languages",
+      "The `proxy.ts` file exports a `proxy` function but is not used as the Next.js middleware (`middleware.ts` is the expected filename); it is unclear whether route protection is actually active in the deployed build",
+      "The README mentions \"Next.js 16\" but Next.js 16 is not yet a released major version (the current stable is 15); this appears to be a documentation error reflecting a pre-release or experimental version"
+    ],
+    "specialChallenges": [],
+    "flags": [],
+    "reportFile": "judge_mathisdev7_mistral-hackathon-paris.md"
+  },
+  {
+    "rank": 15,
+    "name": "Hackathon",
+    "repoUrl": "https://github.com/GitHamza0206/Hackathon-Mistral-2026",
+    "repoOwner": "GitHamza0206",
+    "repoName": "Hackathon-Mistral-2026",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 22,
+      "creativity": 17,
+      "usefulness": 20,
+      "alignment": 20,
+      "total": 79
+    },
+    "summary": "CERNO is a full-stack AI-powered technical screening platform where admins create reusable role templates from job descriptions (parsed via Mistral OCR), candidates submit their materials and enter a live voice interview conducted by an ElevenLabs conversational agent, and Mistral then generates a structured scorecard with dimensional scores, strengths, concerns, and follow-up questions. The system includes admin-vs-candidate workflows, PDF parsing, GitHub profile enrichment, bulk candidate management, SVG-based score distribution charts, a Remotion demo video generator, and AWS Bedrock as an optional inference pathway for Mistral.",
+    "strengths": [
+      "Complete end-to-end hiring workflow: JD PDF → role template → candidate intake → live voice interview → AI scorecard → admin review — each step is implemented, not just sketched",
+      "Dual inference: Mistral API (direct) and AWS Bedrock (`callBedrockMistralChat()` via AWS SDK Converse API) are both fully implemented with a `USE_BEDROCK` flag — PDF OCR always uses Mistral API even in Bedrock mode, which is a thoughtful exception",
+      "Pre-interview checklist with automated mic testing (`getUserMedia`), browser API compatibility checks, and manual environment confirmation shows serious UX attention",
+      "SVG score distribution histogram with no charting library — pure mathematics generating `<path>` elements — is a clean, zero-dependency solution",
+      "Remotion video project (`video/`) with 15 animated scenes, TypeScript components, and render-to-MP4 workflow — an exceptional addition that demonstrates commitment to the full product vision",
+      "`Promise.allSettled` for bulk operations (up to 50 sessions) with partial-failure resilience is the correct pattern for distributed operations"
+    ],
+    "improvements": [
+      "No visible tests in the repository — the `lib/` services have no unit tests and the components have no integration tests",
+      "GitHub enrichment is disabled by default (`ENABLE_GITHUB_ENRICHMENT=false`) and requires a separate token — this feature appears incomplete given the setup friction",
+      "The `lib/preprocess.ts` preprocessing pipeline (candidate context → interview strategy generation) is referenced but not shown in detail in the public API routes — it's unclear how much actual prompting sophistication exists for the interview agent customization",
+      "The role template system supports up to a fixed number of focus areas but there's no visible validation preventing over-specified templates that could make interviews too rigid",
+      "The ElevenLabs agent flow (`POST /api/sessions/[sessionId]/start`) creates a per-session agent dynamically — at scale this could hit ElevenLabs agent creation rate limits, but no mitigation is visible"
+    ],
+    "specialChallenges": [
+      "**Best Voice Use Case (ElevenLabs):** Strong candidate. ElevenLabs Conversational AI is the core interview interaction layer — candidates conduct live voice interviews with an AI agent, the transcript is synced in real time, and the full conversational flow is ElevenLabs-powered. This is one of the most substantive ElevenLabs integrations in this batch.",
+      "**The Hackathon's Next Unicorn (Raise):** Plausible. AI technical screening is a real enterprise market with clear willingness to pay. The full-workflow implementation, AWS Bedrock integration for enterprise deployment, and polished admin dashboard suggest a team thinking about a real product. The demo video further signals startup ambition."
+    ],
+    "flags": [],
+    "reportFile": "judge_githamza0206_hackathon-mistral-2026.md"
+  },
+  {
+    "rank": 15,
+    "name": "hackathon",
+    "repoUrl": "https://github.com/Barbapapazes/hackathon-paris",
+    "repoOwner": "Barbapapazes",
+    "repoName": "hackathon-paris",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 21,
+      "creativity": 20,
+      "usefulness": 20,
+      "alignment": 18,
+      "total": 79
+    },
+    "summary": "Veriscope is a real-time political debate fact-checking pipeline that captures live microphone audio, transcribes it with Mistral's real-time STT, passes each utterance through a multi-agent analysis system (statistique, rhetorique, coherence, contexte), and broadcasts an OBS overlay with the verdict and sourced evidence — all synchronized to a configurable video stream delay. The architecture integrates Mistral across multiple modalities (real-time audio transcription, web search, structured JSON inference) and ties together Temporal for durable workflow orchestration, Laravel with Reverb WebSockets for the broadcast layer, and OBS WebSocket for live scene switching. The scope and integration depth are impressive for a hackathon, with evidence of iterative refinement visible in both the notebooks and production code.",
+    "strengths": [
+      "Genuinely end-to-end: from microphone bytes to OBS scene switch, every step is coded and wired.",
+      "Mistral used across three distinct modalities in one project: real-time audio transcription (`mistralai.extra.realtime`), web search (`client.beta.conversations.start_async` with `web_search` tool), and structured JSON inference (`chat.complete_async` with `response_format={\"type\": \"json_object\"}`).",
+      "Temporal workflow design correctly separates concerns: analysis runs first, delay is computed from `metadata.timestamp_start`, self-correction check runs in parallel, then the remaining delay is awaited before POST — this is proper durable execution, not just a `time.sleep`.",
+      "The \"source filter\" logic in `activities.py` (social media blacklist, URL deduplication, heuristic token-overlap fallback when LLM selection fails) is production-grade defensive coding.",
+      "Laravel backend is well-structured with a clean contract/implementation split (`ObsSceneSwitcher` interface + `ObsWebSocketSceneSwitcher`), proper FormRequest validation with exhaustive error messages, and a `VerifyFactCheckSceneTimestampJob` that auto-reverts the OBS scene after a cooldown — preventing permanent scene locks.",
+      "Three automated PHP tests (validation, happy path with mocked OBS, OBS failure 502) show professional practice on the frontend API side.",
+      "The `realtime_transcript_fusion.py` dual-provider arbitration with heuristic-first, LLM-judge tiebreaker, and `--disable-llm-judge` escape hatch is a well-considered reliability pattern.",
+      "The Agents.ipynb notebook shows the iterative design process, including a working 15-example benchmark with real French politician statements."
+    ],
+    "improvements": [
+      "No Python unit or integration tests for the workflow and activities layer, which is the most complex part of the codebase.",
+      "Hardcoded absolute local paths appear in documentation (e.g. `/Users/godefroy.meynard/Documents/test_datagouv_mcp/...` in `texte/README.md` and `ingestion/README.md`), indicating the docs were not cleaned before submission.",
+      "No AWS infrastructure is used despite being entered under Track 1 (Anything Goes/AWS). The stack is purely local Docker Compose. A deployed endpoint would strengthen the submission.",
+      "The `Agents.ipynb` notebook still references Tavily (`from tavily import TavilyClient`) as the web search backend, while the production `activities.py` has migrated to Mistral's own web search API. The notebook is not fully updated to match production.",
+      "Source selection in `_search_relevant_sources` defaults to a heuristic token-overlap approach (`SOURCE_SELECTION_MODE=heuristic`) rather than LLM selection, which may produce lower-quality source attribution than the LLM path.",
+      "The `DebateJsonNoopWorkflow` class name still contains \"Noop\" (a legacy name from a prior iteration), which is misleading in the final submission.",
+      "No demo video or live recording is included in the repository to demonstrate the overlay working on actual broadcast footage.",
+      "The `ingestion/` directory contains a `realtime_transcript.py` (older version) whose relationship to the more advanced `texte/realtime_transcript_fusion.py` is not clearly explained."
+    ],
+    "specialChallenges": [],
+    "flags": [],
+    "reportFile": "judge_barbapapazes_hackathon-paris.md"
+  },
+  {
+    "rank": 17,
+    "name": "alphaStral",
+    "repoUrl": "https://github.com/dirdr/alphaStral",
+    "repoOwner": "dirdr",
+    "repoName": "alphaStral",
+    "track": "Fine-Tuning (W&B)",
+    "trackNumber": 2,
+    "scores": {
+      "technicity": 21,
+      "creativity": 20,
+      "usefulness": 15,
+      "alignment": 22,
+      "total": 78
+    },
+    "summary": "alphaStral fine-tunes Mistral's Ministral-3B model on Pokemon Showdown battle replays scraped from high-ELO (1500+) matches, then pits the fine-tuned model (\"AlphaStral\") against both the base model and larger Mistral API models in live, automated Pokemon battles. The project uses the poke-env library to interface with a locally-hosted Pokemon Showdown server, enabling structured LLM agent battles with full benchmarking and interactive HTML visualization output. The core thesis — can a domain-fine-tuned 3B model outperform a much larger foundation model on a specialized game task? — is validated by benchmark results showing 80% win rate vs. base Ministral-3B and competitive 50% parity against the 24B mistral-small.",
+    "strengths": [
+      "Clean, well-documented modular architecture: `BattleAgent` ABC, `StateExtractor`, `ActionParser`, `AgentPlayer`, and `BattleRunner` are each single-responsibility and clearly separated, making the system easy to extend with new agent types via a simple registry in `main.py`",
+      "Three distinct inference backends (Mistral API with retry/throttle logic, HuggingFace Inference API, Apple Silicon MLX local inference) demonstrate real engineering breadth and hardware-agnostic design",
+      "The data pipeline (`finetune/scraper.py`) is production-quality: concurrent fetching with `ThreadPoolExecutor`, thread-local HTTP sessions, per-key locking to prevent duplicate PokeAPI requests, automatic dataset construction from raw replay logs enriched with type/stat data",
+      "The benchmark visualization pipeline generates polished, self-contained HTML reports with multiple Plotly charts: cumulative win rate, outcome grid, decision latency violin/percentile plots, type effectiveness breakdown, and a scrollable decision reasoning log showing the model's chain-of-thought per turn",
+      "Both fine-tuning experiments documented with explicit hyperparameter tables and rationale for configuration choices (why rank was increased from 16 to 32 when moving to A100)",
+      "Benchmark results are concrete and comparative: 80% win rate vs. base Ministral-3B, 50% vs. mistral-small (24B), 40% vs. mistral-large (123B)"
+    ],
+    "improvements": [
+      "The fine-tuned model's prompt format used during training (`finetune/scraper.py`) differs meaningfully from the richer multi-turn chat prompt used in `_shared.py`'s `_build_prompt()` for live battles. The `HFAgent` compensates with `_build_finetuned_prompt()`, but the richer state representation (boosts, side conditions, bench status, terrain) was never seen during fine-tuning, leaving potential performance gains on the table",
+      "No Weights & Biases integration is present despite this being the W&B track — training metrics visible only in Colab notebook output, making experiment tracking non-reproducible",
+      "The fine-tuned model cannot produce switch actions: training data only captures winner's move choices, so `HFAgent._call_api()` always returns `{\"action_type\": \"move\", ...}`. A more complete dataset would include switch decisions requiring parsing `|switch|` log lines in a turn-aware way",
+      "The 10-battle sample size per matchup is small for statistical confidence; results would benefit from confidence intervals or a larger sample",
+      "`pyproject.toml` description field remains the default placeholder \"Add your description here.\""
+    ],
+    "specialChallenges": [
+      "**Best Video Game Project (Supercell):** Strong candidate. alphaStral directly implements an AI agent that plays Pokemon Showdown — an established competitive video game platform — using a fine-tuned Mistral model. The system runs real battles with move selection, switching, weather/terrain tracking, and Terastallization mechanics, and battles can be spectated live via the Showdown web interface. The \"fine-tuned 3B model as competitive game-playing AI\" framing is both technically interesting and game-native.",
+      "No other special challenges appear directly applicable."
+    ],
+    "flags": [],
+    "reportFile": "judge_dirdr_alphastral.md"
+  },
+  {
+    "rank": 17,
+    "name": "mistral",
+    "repoUrl": "https://github.com/AdrienLebret/mistral-hackathon-hospi-guide",
+    "repoOwner": "AdrienLebret",
+    "repoName": "mistral-hackathon-hospi-guide",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 20,
+      "creativity": 17,
+      "usefulness": 22,
+      "alignment": 19,
+      "total": 78
+    },
+    "summary": "Triastral is a voice-first AI kiosk for emergency department intake that uses Amazon Nova Sonic 2 for real-time bidirectional speech, Mistral Large (via Amazon Bedrock) for structured clinical pre-assessment and public health data enrichment, and a Next.js patient-facing UI with WebSocket streaming. The system implements the French CCMU triage classification framework, enforces a strict information boundary so patients never see clinical risk assessments, and delivers a nurse-facing triage document at session end. It is a thoughtfully designed, practically motivated product with substantial working code across the full stack.",
+    "strengths": [
+      "Full-stack implementation: a working voice backend (BidiAgent + Nova Sonic 2), two Mistral Large sub-agents, a FastAPI/WebSocket bridge, and a polished Next.js kiosk UI all exist in the repository with working code",
+      "Medically rigorous prompting: the orchestrator and clinical agent prompts implement OPQRST, a recognized emergency triage assessment framework, with explicit red-flag identifiers tied to deterministic CCMU classification logic in `triage.py`",
+      "Information boundary enforced in code at two levels: the LLM prompt (`orchestrator.md` explicitly lists what must never be said to the patient) and in TypeScript (`informationBoundary.ts` `extractPatientSummary` function that strips `recommended_ccmu`, `ccmu_reasoning`, `red_flags`, and `opqrst` from any patient-facing display)",
+      "MCP integration against the live data.gouv.fr endpoint for epidemiological context, BDPM medication safety data, and FINESS facility lookup — a genuinely useful and non-trivial integration",
+      "Error handling throughout: `clinical_agent.py` returns a safe fallback JSON with `suggested_ccmu: \"3\"` on any failure; the WebSocket layer handles binary/text frame disambiguation and has a 30-second session timeout; the `AudioCaptureService` handles double-start and resource cleanup",
+      "Well-structured audio pipeline: PCM 16kHz capture via `ScriptProcessorNode`, a `RollingBuffer` emitting 200 ms chunks, binary WebSocket frames, and a scheduled playback service with barge-in support",
+      "The `summarize_transcript` agent (Mistral Large) is called at session end as a fallback to extract patient-declared data from the raw conversation even if tool results were not captured — a thoughtful resilience path",
+      "Detailed documentation: `ARCHITECTURE.md`, `CCMU_REFERENCE.md`, `DATA_MODEL.md`, and `.kiro/specs` with formal requirements in acceptance-criteria style, showing disciplined product thinking"
+    ],
+    "improvements": [
+      "The nurse dashboard is entirely absent from the codebase — it is the primary consumer of the triage document and its absence means the end-to-end loop is incomplete for demo purposes",
+      "DynamoDB persistence layer is planned but not implemented; triage documents are currently written to local JSON files (`backend/output/`)",
+      "The FastAPI CORS configuration in `routes.py` uses `allow_origins=[\"*\"]` which is a security concern for a healthcare application handling clinical data",
+      "The `AudioPlaybackService` is referenced throughout but was not found in the explored file listing — it needs verification that the implementation is complete",
+      "The `stop_conversation` trigger for triage document compilation relies on the orchestrator calling the tool correctly; if the BidiAgent's `bidi_connection_close` event reason is anything other than `\"user_request\"`, the triage document is never sent to the frontend — a fragile edge case",
+      "The DataGouv agent prompt is written in English while the orchestrator and clinical prompts are in French, creating inconsistency in a French-language product",
+      "No authentication or session isolation on the WebSocket endpoint — in a real hospital kiosk deployment this is a gap",
+      "Property-based tests using `fast-check` are listed as a devDependency and referenced in comments in `AudioCaptureService.ts`, but no test files were found in the repository"
+    ],
+    "specialChallenges": [
+      "The project uses Amazon Nova Sonic 2 via Bedrock alongside Mistral Large, and integrates the MCP protocol against a live external data source (data.gouv.fr). If there is a special challenge for AWS Bedrock or MCP integration, this project is a strong candidate. No fine-tuning is used (Track 2 not applicable). No on-device inference is used (Track 3 not applicable)."
+    ],
+    "flags": [],
+    "reportFile": "judge_adrienlebret_mistral-hackathon-hospi-guide.md"
+  },
+  {
+    "rank": 19,
+    "name": "ecole",
+    "repoUrl": "https://github.com/batuergun/ecole",
+    "repoOwner": "batuergun",
+    "repoName": "ecole",
+    "track": "Fine-Tuning (W&B)",
+    "trackNumber": 2,
+    "scores": {
+      "technicity": 21,
+      "creativity": 18,
+      "usefulness": 21,
+      "alignment": 17,
+      "total": 77
+    },
+    "summary": "Ecole is an end-to-end automated fine-tuning platform that takes user-uploaded documents (PDFs, text files), generates Q&A training datasets via LLM, fine-tunes Mistral models using LoRA/SFTTrainer, and evaluates the result with an LLM-as-judge benchmark — all through a polished web UI. The project demonstrates substantial full-stack depth across a Go API backend, a Python ML worker, and a React frontend, with support for both local GPU and HuggingFace Jobs cloud compute. Mistral models are the primary fine-tuning target throughout, and the Mistral API is used as an optional LLM provider for dataset generation and judging.",
+    "strengths": [
+      "Genuinely complete end-to-end pipeline: document ingestion, dataset generation, LoRA fine-tuning, automated evaluation, model publishing to HF Hub, and interactive chat with the resulting model.",
+      "Strong polyglot architecture: Go for the API server (with pgx, Gin, go-migrate, AES-GCM key encryption), Python for ML worker (TRL, PEFT, transformers, PyMuPDF, sentence-transformers, rouge-score), TypeScript/React for the frontend with TanStack Query and SSE streaming.",
+      "Real job queue implementation using PostgreSQL's `FOR UPDATE SKIP LOCKED` with stale-claim reset, retry logic, and per-job progress reporting — a proper distributed task queue without introducing Redis or a message broker.",
+      "Dual compute modes: local NVIDIA GPU (`docker-compose.gpu.yml`) and HuggingFace Jobs cloud dispatch (`run_uv_job`), with the HF Jobs path supporting Trackio metric dashboards.",
+      "Multi-modal PDF handling: pages rendered at 150 DPI and passed as base64 images to the VLM alongside extracted text, enabling Q&A generation from image-heavy documents.",
+      "LLM-as-judge evaluation with both subjective scoring (1–5 scale) and deterministic metrics (semantic similarity via `all-MiniLM-L6-v2`, ROUGE-L), stored per benchmark run with per-question granularity.",
+      "API key encryption at rest using AES-256-GCM (`crypto/crypto.go`).",
+      "Token streaming chat interface that hot-loads the trained adapter into GPU memory, supports full conversation history, and auto-closes after a 5-minute idle timeout to free VRAM.",
+      "Production deployment configuration via `render.yaml` covering the full stack.",
+      "Clean step-wizard UI with auto-advance logic, progress bars, and contextual lock states."
+    ],
+    "improvements": [
+      "The default and recommended LLM provider for both dataset generation and benchmark judging is Anthropic (Claude Sonnet 4.6), not Mistral. For a hackathon centered on Mistral AI, this is a significant gap. Swapping the default to `mistral-large-latest` / `pixtral-large-latest` would be trivial given the existing abstraction in `llm.py`.",
+      "No W&B integration despite this being a stated Track 2 requirement. Trackio is used instead, which appears to be a HuggingFace-native alternative, but is not the track's designated partner.",
+      "The worker API endpoint group (`/api/worker/...`) has no authentication beyond an internal convention — any process that knows the API URL can claim jobs, report training progress, or read project API keys. Adding a shared secret or worker token would be a minimal security improvement.",
+      "The default encryption key (`dev-encryption-key-change-in-prod`) and JWT secret are committed in `config.go` as fallbacks; the `render.yaml` does auto-generate them for cloud deploys but local Docker Compose uses the insecure defaults.",
+      "The HF Jobs benchmark entry script (`hf_benchmark_entry.py`) is referenced in `benchmark.py` but is not present in the repository at the path constructed by `os.path.dirname` chains — only `hf_job_entry.py` exists. This means the cloud benchmark path is likely broken.",
+      "No automated tests at any layer (API, worker, or frontend).",
+      "The training UI only exposes Ministral 3B and 8B reasoning variants; users cannot enter an arbitrary HuggingFace model ID, which limits applicability.",
+      "Chat streaming uses SSE polling of a DB-backed message field rather than true streaming from the model directly to the client; this adds latency and complexity compared to a WebSocket or direct SSE from the inference thread."
+    ],
+    "specialChallenges": [],
+    "flags": [],
+    "reportFile": "judge_batuergun_ecole.md"
+  },
+  {
+    "rank": 20,
+    "name": "mistral",
+    "repoUrl": "https://github.com/mistral-hack-vah/mistral-vibe-rc",
+    "repoOwner": "mistral-hack-vah",
+    "repoName": "mistral-vibe-rc",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 20,
+      "creativity": 18,
+      "usefulness": 19,
+      "alignment": 19,
+      "total": 76
+    },
+    "summary": "Mistral Vibe is a voice-controlled coding assistant that lets users speak to a Mistral-powered agent and watch code edits appear in real time. The system combines Mistral's Voxtral realtime transcription API, the Mistral Vibe CLI as the code-editing agent, and ElevenLabs TTS to create a full push-to-talk loop: speak → transcribe live → run agent → speak the response → show diffs. It consists of a Python FastAPI backend and an Expo React Native mobile app, with a clean monorepo structure.",
+    "strengths": [
+      "Clean, well-documented monorepo with clear separation between Python backend and Expo mobile app.",
+      "Sophisticated async architecture: the `stream_agent_with_tts` function in `main.py` runs agent text generation and TTS in parallel using `asyncio.Queue`, minimising latency.",
+      "Realtime transcription via Mistral Voxtral is properly implemented with delta callbacks forwarded live to the WebSocket client (`transcript_delta` events visible in `use-agent.ts`).",
+      "The audio playback hook (`use-audio-playback.ts`) uses a thoughtful strategy: play the first chunk immediately, buffer subsequent ones, drain on `tts_done` — a genuinely low-latency design.",
+      "Reconnecting WebSocket client (`reconnecting-socket.ts`) with exponential backoff, properly tested with a mock server (`audio-streaming.test.ts`).",
+      "JWT-based auth on both the REST and WebSocket endpoints.",
+      "Interrupt support wired end-to-end: mobile sends interrupt, server sets a flag per session, agent and TTS workers both check it.",
+      "Git diff display in the mobile chat (expandable `EditMessage` component with colour-coded `DiffView`).",
+      "Docker deployment support (`Dockerfile` is clean and production-ready).",
+      "Unit tests for `SessionManager` (17 tests) and basic tests for the audio processor.",
+      "CLI push-to-talk test client (`microphone_client.py`) for backend testing without the app.",
+      "Permission system with per-action approval (read/edit/execute) in the mobile UI.",
+      "`tts_utils.py` thoughtfully strips markdown, code blocks, and HTML before sending text to TTS.",
+      "The Mistral logo is recreated as an SVG-equivalent React Native component using positioned `View` elements."
+    ],
+    "improvements": [
+      "The agent itself (`vibe_executor.py`) is a subprocess bridge to an external `vibe` CLI binary — not a self-contained Mistral agent. The binary is not bundled or documented as a dependency, making the project hard to run end-to-end from the repository alone.",
+      "`packages/ai/src/bedrock.ts` calls Amazon Bedrock with Claude (`anthropic.claude-3-sonnet`) rather than Mistral, and appears to be unused dead code. This is confusing and slightly detracts from Mistral alignment.",
+      "`docs/CLIENT_TASKS.md` is an extensive 16-section todo list that reveals many features are planned but not yet implemented (Zod schema codegen, Zustand global state, full permission response protocol, audio socket architectural split). This gap between the task list and the implementation suggests the submission is incomplete relative to its own design.",
+      "The test for `audio_processor.py` tests an older buffer-based API (`_buffers`, `_pcm16_to_wav`) that does not match the actual realtime streaming implementation in the current `audio_processor.py` — the tests will fail against the live code.",
+      "In-memory session storage: `session_manager.py` notes \"For production, swap the dict with Redis,\" but this is not implemented, so the server loses all state on restart.",
+      "No screenshots, demo video, or live demo link in the README — it is harder to assess the actual UX quality without seeing it run.",
+      "The `packages/db` directory contains a Drizzle ORM database schema (`schema.ts`) that is not used anywhere in the application.",
+      "CORS is set to `allow_origins=[\"*\"]` which is appropriate for a hackathon prototype but would need hardening for production."
+    ],
+    "specialChallenges": [],
+    "flags": [],
+    "reportFile": "judge_mistral-hack-vah_mistral-vibe-rc.md"
+  },
+  {
+    "rank": 20,
+    "name": "vibecraft",
+    "repoUrl": "https://github.com/benjamin-feldman/vibecraft",
+    "repoOwner": "benjamin-feldman",
+    "repoName": "vibecraft",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 22,
+      "creativity": 21,
+      "usefulness": 16,
+      "alignment": 17,
+      "total": 76
+    },
+    "summary": "Vibecraft is an ambitious project that embeds an AI-powered code editor inside Minecraft, allowing players to describe redstone-logic circuits in natural language and have them compiled to Verilog via a custom Python DSL (mcdsl). The system chains Mistral's text generation (mistral-medium-latest) for DSL code generation, Voxtral for voice-to-DSL transcription, and Ministral-3B for in-editor code explanation with TTS playback, all bridged to a Minecraft Forge mod through a local WebSocket server. The technical scope is remarkable: a fully specified domain-specific language, a multi-stage compiler pipeline, a Verilog backend with macro-ABI, and a polished in-game editor with Vim keybindings and syntax highlighting.",
+    "strengths": [
+      "End-to-end pipeline from natural language (or voice) to executable Minecraft hardware is technically cohesive and fully implemented in code.",
+      "The `mcdsl` DSL is properly designed with a three-type expression system (BoolExpr, IntExpr, EventExpr), a restricted Python front-end with AST validation in `compiler.py`, and a clean IR (`DesignIR`, `MacroInstance`) that separates concerns between compilation and Verilog emission.",
+      "The Verilog backend (`backend.py`) generates well-formed, parameterized module instantiations with blackbox declarations and enforces parameter range constraints (e.g. `TICKS: 1..1200`) — a level of rigour uncommon in hackathon projects.",
+      "The Minecraft Forge mod implements a genuine Vim-modal editor (Normal/Insert modes, `h j k l`, `dd`, `o`, `$`) with a syntax highlighter (`SyntaxHighlighter.java`) and line-number gutter, all rendered in the game's GUI layer.",
+      "Three distinct Mistral models are meaningfully integrated: generation, transcription, and explanation — with TTS audio playback of explanations piped back into the game via `afplay`.",
+      "Six test files cover compiler validation, IR structure, macro ABI constraints, expression semantics, and device runtime, providing real regression coverage.",
+      "The DSL documentation (`AGENTS.md`, `DSL_MACRO_ABI.md`) is detailed enough to guide an LLM to produce correct DSL programs, and the AGENTS.md is injected as system context in every AI call."
+    ],
+    "improvements": [
+      "The MinecraftHDL submodule is referenced but not initialised in the repository; the core compilation target (physical Verilog→redstone) is therefore not demonstrable from a fresh clone without extra steps.",
+      "Server URLs are hardcoded to `brevlab.com` endpoints (e.g. `AUDIO_SERVER_URL = \"https://vllm-xxk5iki9.brevlab.com/v1\"` in `vibe_server.py`), which will break for any evaluator who cannot reach those servers; these should be environment-variable-only.",
+      "The syntax highlighter (`SyntaxHighlighter.java`) uses C/C++ keywords and types (e.g. `typedef`, `constexpr`, `uint8_t`) rather than Python/DSL keywords, producing incorrect highlighting for the actual DSL files it is intended to display.",
+      "The `vibe_agent.py` launcher delegates all AI work to an external `vibe` binary that must be separately installed; the older agent path is partially superseded by `vibe_server.py` but both code paths remain.",
+      "There is no CI/CD configuration (no GitHub Actions, no Makefile target), making it difficult to verify correctness without a fully configured local environment.",
+      "The README is extremely terse (seven lines) and provides no architecture overview, no description of what the project actually does, and no indication of which Mistral models are used — a significant omission for evaluation and adoption.",
+      "The `prompt_cli.py` uses `client.chat.complete(...)` (Mistral SDK style) while `explain_cli.py` uses `client.chat.completions.create(...)` (OpenAI style), reflecting inconsistent API client usage across the codebase."
+    ],
+    "specialChallenges": [
+      "The project uses Voxtral (speech-to-text) and a custom TTS model for the explain-and-speak feature, suggesting potential eligibility for a multimodal or voice-interface challenge if one exists. No fine-tuning or on-device deployment is present. None of the standard special challenge categories are definitively met based on visible code alone."
+    ],
+    "flags": [],
+    "reportFile": "judge_benjamin-feldman_vibecraft.md"
+  },
+  {
+    "rank": 22,
+    "name": "speech",
+    "repoUrl": "https://github.com/charles-azam/speech-to-spell",
+    "repoOwner": "charles-azam",
+    "repoName": "speech-to-spell",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 21,
+      "creativity": 20,
+      "usefulness": 16,
+      "alignment": 18,
+      "total": 75
+    },
+    "summary": "Speech to Spell is a real-time multiplayer wizard duel game where players speak spells out loud — Voxtral Mini transcribes the voice, Ministral 8B judges the spell's creativity and coherence (assigning damage and visual effects), and a second Ministral 8B instance drives a live sports-commentary duo that reacts after every turn. The project is end-to-end functional, deployed on EC2 + Cloudflare Pages, and exhibits a latency-first design philosophy that is unusually deliberate for a 48-hour hackathon. The game concept is immediately fun and produces genuinely entertaining moments.",
+    "strengths": [
+      "Latency-first architecture is explicitly designed, documented, and consistently executed: Voxtral Mini + Ministral 8B chosen for speed, commentator is fire-and-forget, sound effects are pre-generated and disk-served at runtime, TTS is cached in memory, EC2 is co-located in Europe near Mistral inference endpoints.",
+      "Dual-agent design with clearly separated concerns: Judge Agent blocks the game loop (single tool call, result needed), Commentator Agent is async (multi-tool-call, `marc_says` / `sophie_says`, loops autonomously every 20 seconds of silence).",
+      "Tool-calling is used fluently throughout: `judge_spell` tool with 10 fields (verdict, comment, spell_name, target, damage, sound_id, emojis, template, primary_color, secondary_color), `select_emojis` for emoji inference, `marc_says` / `sophie_says` for the commentator duo — all with tight JSON schemas and server-side validation.",
+      "Frontend is genuinely polished: 9 particle animation templates in `SpellEffect.tsx` (explosion, swirl, rain, wave_left, wave_right, shatter, pulse, spiral, rise), audio ducking via Web Audio API `GainNode` when recording, exponential backoff WebSocket reconnection, screen shake for big damage, push-to-talk with per-player microphone selection, bilingual i18n.",
+      "Code quality is high for a 48-hour project: clean module separation, Pydantic models throughout, lazy singletons with global client reuse, error handling for dead WebSockets, race condition fix for concurrent pending explanations (dict keyed by player side), FIFO cache eviction.",
+      "The `EXPLAIN` verdict mechanic is a creative design touch — it produces a moment of theatrical tension before the judge delivers a final verdict.",
+      "Deployment is complete and production-ready: Docker + docker-compose + nginx reverse proxy with WebSocket upgrade headers, Cloudflare Pages for the frontend, password-gated to conserve API credits."
+    ],
+    "improvements": [
+      "The AWS Bedrock integration (`_get_aws_client()`, `AWS_MODEL`, `SPELL_PROVIDER = \"mistral\"`) is present as dead code. If this is the claimed Track 1 differentiator, it should be demonstrated, load-balanced, or at least toggled via environment variable at demo time.",
+      "Room state is held entirely in-process Python dicts (`_rooms`, `_room_websockets`). A single server crash loses all active games with no recovery path. For a hackathon this is acceptable, but it means the system cannot scale beyond a single instance.",
+      "The commentator idle loop fires every 20 seconds but the `judge_busy_until` check and TTS generation happen sequentially inside the loop — if ElevenLabs is slow, commentary lines can pile up or block the next commentary cycle.",
+      "No tests are present anywhere (backend or frontend). Given the non-trivial game logic (consume-and-refill, EXPLAIN flow, broadcast filtering), even a handful of unit tests for `game.py` and `spell.py` would meaningfully improve confidence.",
+      "The `progress.md` file references RAG (Mistral Embed + Qdrant for sound/image lookup) and VAD (Silero) as not yet implemented. These would have pushed the technicity score higher.",
+      "The `infer_emojis()` function fallback (`valid = hand[:1]`) silently picks one emoji when inference fails — this should arguably broadcast a warning or fizzle the spell rather than silently degrading.",
+      "Hand size is fixed at 10 emojis with no scarcity — the emoji hand is a creative scaffold but never creates strategic tension. Introducing limited or rare emojis could deepen gameplay."
+    ],
+    "specialChallenges": [],
+    "flags": [],
+    "reportFile": "judge_charles-azam_speech-to-spell.md"
+  },
+  {
+    "rank": 23,
+    "name": "PortWorld",
+    "repoUrl": "https://github.com/armapidus/PortWorld",
+    "repoOwner": "armapidus",
+    "repoName": "PortWorld",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 20,
+      "creativity": 17,
+      "usefulness": 21,
+      "alignment": 16,
+      "total": 74
+    },
+    "summary": "PortWorld is an open-source platform that connects AI services to smart glasses (Meta Ray-Ban Gen 2) via a dual-component architecture: a native iOS Swift client and a Python FastAPI backend. The system creates a hands-free, voice-and-vision AI assistant pipeline that captures audio and video from smart glasses, processes them through Voxtral (STT), NVIDIA Nemotron (video understanding), and Mistral LLMs, then streams TTS audio responses back to the glasses via ElevenLabs. The project is notably complete and production-minded, targeting practical use cases like field technicians and plumbers.",
+    "strengths": [
+      "The end-to-end pipeline is genuinely complete: from audio capture via Bluetooth HFP through STT, video summarization, LLM response, and TTS audio streaming back to the glasses speaker — all implemented, not just described.",
+      "The `AssistantPlaybackEngine.swift` is exceptionally well-engineered for a hackathon. It handles stuck-playback detection with a consecutive-check counter, graceful reconnection after route changes, backpressure signaling, and correct buffer accounting across async callbacks — work that typically only emerges from production experience with AVAudio.",
+      "The streaming architecture in `elevenlabs.py` uses a concurrent `send_loop`/`receive_loop` task pair over a WebSocket, with a bounded asyncio queue (maxsize=48) and proper generator-based async streaming — this is non-trivial and correct.",
+      "The plugin and agent preset system (`catalog.py`, `tools/registry.py`) is thoughtfully designed: agents can be added via external Python modules, tools can be registered at runtime, and the priority chain for system prompts and API keys is clean and documented.",
+      "The project includes four XCTest suites covering WebSocket codec round-trips, VAD query endpoint lifecycle, event logger behavior, and wake-word engine semantics — a level of test coverage that is rare in hackathon submissions and demonstrates professional intent.",
+      "Documentation is thorough: a detailed PRD with functional requirements (`FR-01` through `FR-13`) and non-functional requirements (`NFR-01` through `NFR-09`), an implementation status checklist, and architecture diagrams.",
+      "The vision frame uploader sends continuous 1 FPS JPEG frames to the backend as base64 JSON, enabling the backend to maintain rolling scene understanding independent of explicit query events.",
+      "The `SessionOrchestrator.swift` (664 lines) is a clean state machine coordinating wake detection, VAD, rolling video/audio buffers, WebSocket transport, and health telemetry within a single `@MainActor`-isolated class."
+    ],
+    "improvements": [
+      "The backend `/vision/frame` endpoint in `pipeline.py` currently just acknowledges receipt and logs debug output — the frames are not actually processed or correlated with query bundles on the backend side. This is a visible gap between the iOS implementation and the backend capability.",
+      "The Mistral integration is correct but not deep: the main LLM is called via a generic OpenAI-compatible HTTP client (`_call_chat_non_stream` in `mistral.py`), which means any OpenAI-compatible provider works equally well. There is no use of Mistral-specific features like function calling, tool use, or the Mistral agents API.",
+      "The `strands` driver integration (`_iter_main_llm_tokens_with_strands_driver`) attempts compatibility through an exhaustive list of method-name guesses across multiple constructor variants — this is a fragile pattern that signals uncertainty about the target library's API surface.",
+      "The rolling video buffer memory boundedness noted as an open item in `PRD.md` (`NFR-09`): the `RollingVideoBuffer` maxes out at `max(preWakeVideoMs * 6, 30_000)` ms, but the proof under repeated wake/query soak (`T11`, `T13`) is explicitly listed as not yet done.",
+      "The tracing integration with W&B Weave (`weave_backend.py`) is minimal — it attempts to call `weave.attributes()` or `weave.log()` in a fire-and-forget try/except with no structured span hierarchy, making it a thin logger rather than true experiment tracing.",
+      "The builtin tools (`echo_context`, `detect_intent` in `builtin.py`) are very lightweight stubs — `detect_intent` is a regex keyword matcher. Real tool use (e.g., web search, calendar, device-specific APIs) is scaffolded but not implemented.",
+      "No authentication on the vision frame or query endpoints beyond an optional `EDGE_API_KEY` header check, which means the backend is effectively open if exposed to a network."
+    ],
+    "specialChallenges": [],
+    "flags": [
+      "No Mistral"
+    ],
+    "reportFile": "judge_armapidus_portworld.md"
+  },
+  {
+    "rank": 24,
+    "name": "aicoding (HireAI)",
+    "repoUrl": "https://github.com/Ayoubkassi/aicoding",
+    "repoOwner": "Ayoubkassi",
+    "repoName": "aicoding",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 20,
+      "creativity": 18,
+      "usefulness": 21,
+      "alignment": 14,
+      "total": 73
+    },
+    "summary": "HireAI is a fully autonomous AI-powered coding interview platform that uses Mistral Large as the conversational interviewer, ElevenLabs for natural TTS voice output, face-api.js for in-browser webcam proctoring, and Monaco Editor for live code editing and execution. The platform enforces a structured six-phase interview flow (Intro → Warmup → Problem → Coding → Review → Decision) with a multi-layer anti-cheating system covering tab detection, paste blocking, gaze tracking, and prompt-injection defense. The end result is a polished, functionally complete product with a genuinely compelling real-world use case.",
+    "strengths": [
+      "Genuinely end-to-end product: from setup through interview, proctoring, feedback, decision, and downloadable report",
+      "Sophisticated multi-layer anti-cheating architecture (client regex + server safety gate + AI self-detection) with coherent scoring logic in `computeIntegrityScore()` (`app.js` lines 1291-1311)",
+      "Voice interaction is well-engineered: echo protection by muting mic during TTS, 1.5s silence detection for auto-send, barge-in interruption support, and mic cooldown after AI finishes speaking (`app.js` lines 648-721)",
+      "Phase enforcement is implemented both in the system prompt and in JavaScript (`updatePhase()` at `app.js` lines 482-509), preventing backward jumps or skipping more than one phase",
+      "Server-side code execution for 7 languages with proper temp file isolation, compilation for C/C++/Java, and 10s timeout (`app.py` lines 196-299)",
+      "Full interview session playback with a scrubber, speed controls (0.5x/1x/2x/4x), and color-coded event timeline (`app.js` lines 1566-1802)",
+      "Structured JSON response format enforced on every Mistral call (using `response_format: json_object`), making parsing reliable and phase transitions machine-readable",
+      "Sentiment tracking (confidence, stress, engagement) derived from Mistral's output and visualized in real time",
+      "Webcam proctoring uses actual landmark geometry (nose-tip vs. eye-midpoint offset) to detect gaze direction, not just bounding-box heuristics"
+    ],
+    "improvements": [
+      "The \"Codestral Code Intelligence\" panel (`index.html` lines 200-210) is present in the UI as a prominent feature but has zero implementation in `app.js` — there is no call to any Codestral endpoint. This is a significant gap between claimed and delivered functionality that impacts the score",
+      "No persistent storage: session data, evidence images, and interview logs are all in-memory or written to ephemeral server directories; restarting the server loses everything",
+      "The `save-evidence` endpoint (`app.py` lines 109-148) references `datetime` and `base64` modules that are never imported, meaning it would crash at runtime — the proctoring screenshot save feature is broken",
+      "Code execution has no sandboxing beyond a 10s timeout; arbitrary code runs directly on the server host with the server's privileges, which is a significant security risk for any real deployment",
+      "The system prompt is constructed client-side in `buildSystemPrompt()` (`app.js` lines 237-379) and sent with every request; there is no server-side validation that the system prompt has not been tampered with by the client",
+      "No database or authentication layer; the platform has no concept of accounts, sessions that persist across page reloads, or access control",
+      "Conversation history grows unbounded in `state.messages` and is sent in full with every API call; long interviews will hit token limits or incur high costs",
+      "TypeScript and Rust are listed as editor language options but the `/api/run` endpoint has no execution path for either (they fall through to the \"not supported\" error case)"
+    ],
+    "specialChallenges": [],
+    "flags": [],
+    "reportFile": "judge_ayoubkassi_aicoding.md"
+  },
+  {
+    "rank": 24,
+    "name": "MCPP",
+    "repoUrl": "https://github.com/Tech-Off/mcpp",
+    "repoOwner": "Tech-Off",
+    "repoName": "mcpp",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 20,
+      "creativity": 21,
+      "usefulness": 18,
+      "alignment": 14,
+      "total": 73
+    },
+    "summary": "MCPP is an open-source framework that bridges the Model Context Protocol (MCP) with any website by using a Chrome extension as a transparent execution layer. The user's authenticated browser session replaces OAuth and API integrations entirely, so any AI agent (Mistral, Claude, or any MCP-compatible LLM) can interact with websites through the user's live session cookies. The reference implementation ships with 10 LinkedIn-specific tools covering profiles, posts, messaging, job search, and social actions.\n\n---",
+    "strengths": [
+      "The architectural pattern (browser-as-API-gateway via MCP) is a genuinely original idea with broad applicability beyond the LinkedIn demo",
+      "Leader election is implemented rigorously with database-level optimistic locking (`createQueryBuilder().update(...).andWhere('leader_lease_until < NOW() OR leader_device_id = :deviceId')`) and heartbeat renewal, a level of correctness rarely seen in hackathon projects",
+      "The project cleanly separates concerns: MCP protocol handling (`mcp.service.ts`), command lifecycle (`command.service.ts` + `command-awaiter.service.ts`), device management (`device.gateway.ts`), and tool definition/execution (server `tools.ts` + browser `tools.js`)",
+      "The `CommandAwaiterService` pattern — creating a Promise that is resolved when the WebSocket `command:done` event arrives, with a 60-second timeout — is a clean async bridge between HTTP and WebSocket layers",
+      "Database schema migrations are managed with Liquibase changesets (`001-create-users-table.xml`, `002-create-devices-tables.xml`) with proper rollback definitions, showing production-ready discipline",
+      "The dual MCP transport support (Streamable HTTP for modern clients, SSE for legacy ones) in `mcp.controller.ts` shows protocol awareness",
+      "The extension popup (React 18 + Tailwind + Radix UI) is polished, with a full `ApiTestPage.tsx` that allows interactive testing of all 10 LinkedIn tools directly from the popup",
+      "The README is exceptionally well-written with ASCII architecture diagrams, a 7-step data flow explanation, and a clear \"build your own MCPP in two files\" guide",
+      "---"
+    ],
+    "improvements": [
+      "**Mistral integration is absent from the codebase.** There are no calls to Mistral's API, SDK, agents, or models anywhere in the repository. For a hackathon explicitly judging Mistral use, this is the most significant gap. Adding even a simple `mistral-large` call for summarisation or a Mistral Agents integration would strengthen the submission considerably.",
+      "The command store in `command.service.ts` is an in-memory `Map`, meaning commands are lost on server restart and the system cannot scale horizontally without the Redis adapter mentioned only as a comment in `device-connection.store.ts`",
+      "The `tools.js` file (the actual browser-side LinkedIn tool implementations) is referenced extensively in the README and in `command-executor.js` but is not present in the repository on the `main` branch — only `tools_example.js` exists. The README acknowledges the full implementation is on a `linkedin` branch, which is not publicly accessible from the repository listing",
+      "`linkedin-api-messenger.js` imports from `./linkedin-api.js` but that file does not exist in the repository, meaning the content script would fail to load as-is",
+      "No unit or integration tests beyond the default NestJS e2e stub (`test/app.e2e-spec.ts`)",
+      "The API key is stored as a plain UUID in the database with no hashing, reducing security if the database is compromised",
+      "Comments and some UI labels are in French (`[Election] 👑 Ce device est LEADER`), reducing accessibility for an international audience",
+      "---"
+    ],
+    "specialChallenges": [],
+    "flags": [
+      "No Mistral"
+    ],
+    "reportFile": "judge_tech-off_mcpp.md"
+  },
+  {
+    "rank": 26,
+    "name": "hackathon",
+    "repoUrl": "https://github.com/yonsy7/hackathon-mistral-2",
+    "repoOwner": "yonsy7",
+    "repoName": "hackathon-mistral-2",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 20,
+      "creativity": 19,
+      "usefulness": 16,
+      "alignment": 17,
+      "total": 72
+    },
+    "summary": "Coexist is a voice-controlled app builder that captures the user's spoken idea, transcribes it in real time using Mistral's Voxtral realtime API, routes it through an orchestrator agent that converts it into a spec, and then invokes the Mistral Vibe CLI to generate and run the actual app — responding back to the user via ElevenLabs TTS. The system spans five concurrent services (Swift audio capture, Python voice server, Node.js orchestrator, SSE bridge, and React dashboard) stitched together by a single `start.sh` script. It is an impressively ambitious multi-layer pipeline for a 24-hour hackathon, though the tight coupling to macOS-specific tooling (ScreenCaptureKit, BlackHole) limits its portability.",
+    "strengths": [
+      "**Multi-language, multi-process architecture executed coherently**: Swift (ScreenCaptureKit), Python (FastAPI + asyncio), and TypeScript (Express + AI SDK) components communicate cleanly over HTTP and stdout pipes.",
+      "**Custom binary framing protocol** (`Protocol.swift`): Type + 4-byte LE length + payload is well-designed and precisely mirrored in `client.py`'s `read_exactly` and frame-dispatch loop.",
+      "**Robust audio resampling**: `AudioResampler` uses `soxr.ResampleStream` for streaming high-quality conversion from 48kHz stereo Float32 to 16kHz mono s16le, exactly what the Mistral Voxtral API expects.",
+      "**Async reconnect with exponential backoff** (`TranscriptionBridge._transcribe_with_reconnect`): graceful handling of WebSocket disconnections is production-quality thinking for a hackathon.",
+      "**Wake-word detection with fuzzy matching**: both exact substring and `SequenceMatcher`-based sliding-window fuzzy matching, making the wake phrase tolerant of transcription noise.",
+      "**Fire-and-forget orchestration**: the Vibe CLI is launched non-blocking, the HTTP response returns immediately, and intermediate TTS updates (\"Writing some code\", \"Running some commands\") are streamed back to the user while the build runs.",
+      "**AWS Bedrock dual-provider support**: clean fallback logic between Mistral direct API and Bedrock, with `mistral.devstral-2-123b` mapped via `@ai-sdk/amazon-bedrock`.",
+      "**Single `start.sh` entrypoint**: builds the Swift binary, creates the Python venv, installs dashboard deps, and starts all five services with proper PID tracking and `trap cleanup EXIT INT TERM`."
+    ],
+    "improvements": [
+      "**macOS-only with heavy external dependencies**: BlackHole, PortAudio, ScreenCaptureKit, and the Swift toolchain make this unrunnable on Linux or Windows without significant work. A Docker path or fallback microphone input would broaden accessibility.",
+      "**Global mutable state in orchestrator**: `let messages: any[]` at module scope means concurrent requests to `/generate` will corrupt each other's conversation history. A session-per-request or at minimum a mutex is needed.",
+      "**`index-working.ts` filename**: suggests this is a working draft rather than a finished artifact; a cleaner production entry point would improve confidence.",
+      "**No error handling on SSE client disconnect in `index-working.ts`**: the `/updates` endpoint adds `vibeEvents` listeners but never removes them on client disconnect, which will accumulate listeners over time.",
+      "**ElevenLabs for TTS rather than a Mistral-native voice**: introducing a third-party TTS API means an additional paid key and dependency; a Mistral-only solution would be more aligned with the hackathon spirit.",
+      "**Dashboard \"Ray-Ban Glasses View\" label**: the label in `AppPreview.tsx` references glasses hardware that isn't actually used; the label is misleading for evaluators.",
+      "**No tests**: not a blocker for a hackathon, but even a smoke test for the wake-word state machine would increase confidence.",
+      "**`start.sh` hardcodes `python3.13`**: users with Python 3.12 (the stated minimum) will fail on step 2; this should use `python3` or the configured minimum."
+    ],
+    "specialChallenges": [
+      "The project integrates AWS Bedrock via `@ai-sdk/amazon-bedrock` with the `mistral.devstral-2-123b` model as a first-class alternative provider. This makes it potentially eligible for Track 1 AWS special challenges if the hackathon has AWS-specific prizes. No fine-tuning (Track 2) or on-device deployment (Track 3) work is present. The use of Mistral Voxtral realtime transcription could qualify for any Mistral-specific API usage prizes if offered."
+    ],
+    "flags": [],
+    "reportFile": "judge_yonsy7_hackathon-mistral-2.md"
+  },
+  {
+    "rank": 26,
+    "name": "Vibe",
+    "repoUrl": "https://github.com/ethux/Vibe-AR",
+    "repoOwner": "ethux",
+    "repoName": "Vibe-AR",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 18,
+      "creativity": 22,
+      "usefulness": 15,
+      "alignment": 17,
+      "total": 72
+    },
+    "summary": "Vibe AR is an augmented reality coding assistant for the Meta Quest 3 that lets developers talk to their AI coding agent and see code changes appear as floating windows in mixed reality. The system combines Mistral's Voxtral for speech-to-text, Mistral Large/Devstral for LLM responses, ElevenLabs TTS for spoken feedback, Three.js/WebXR for AR rendering, and hand gesture tracking for interaction. Additional components include a 3D file explorer (pixel-art bubbles), a floating terminal (xterm.js via Docker), git tree visualization in 3D space, and an MCP server for AI agent tools.",
+    "strengths": [
+      "The `server/routes/mistral-proxy.js` is a sophisticated piece of engineering: it transparently intercepts all Vibe→Mistral API calls, identifies `<speak>` tagged content in streaming responses, sentence-chunks it, and pushes chunks to TTS clients via WebSocket for real-time playback — all without modifying the upstream Vibe CLI",
+      "MCP server (`mcp-server/server.py`, `vibe_ar/tools/`) exposes git tools (log, diff, blame, branches), scene control (highlight commits, show windows, navigate), and file visualization tools via FastMCP",
+      "Genuine WebXR implementation with hand gesture tracking on Meta Quest 3 — pinch, grab, point, fist, palm interactions for AR window management",
+      "Voxtral STT integration via `server/routes/transcribe.js` using Mistral's audio transcriptions API with `voxtral-mini-latest`",
+      "Multi-service Docker Compose architecture: web server, Vibe CLI in Docker via ttyd, Python companion API, Code City server — shows systems thinking beyond a single-service demo",
+      "Includes a test suite with Playwright e2e tests and unit tests for proxy, scene control, and voice flow"
+    ],
+    "improvements": [
+      "Code City visualization is explicitly broken and described as \"Work in Progress\" — a core differentiating feature not functional at submission time",
+      "Hardware barrier: requires a Meta Quest 3 headset, making it inaccessible for most evaluators and users",
+      "The Vibe CLI config at `workspace/.vibe/config.toml` and the `workspace/.vibe/prompts/vibe-ar.md` suggest the project may itself have been built using AI-assisted \"vibe coding\" — this is meta and interesting but raises questions about how much of the architecture is deeply understood vs. generated",
+      "The local vLLM server for \"Devstral-Small\" (via `VLLM_URL` and `LOCAL_MODELS` env vars in `mistral-proxy.js`) is a nice feature but the vLLM endpoint is pointed at an external server (`vllm.aptget.nl`) rather than a true local instance",
+      "No README instructions for Mac or Linux desktop testing without a Quest headset"
+    ],
+    "specialChallenges": [
+      "**Best use of Mistral Vibe:** This project is fundamentally about enhancing the Mistral Vibe CLI experience by putting it in AR. The workspace config (`workspace/.vibe/config.toml`) directly configures Mistral models and MCP server connections for Vibe CLI. The proxy intercepts all Vibe CLI Mistral calls. This is one of the clearest \"Best use of Mistral Vibe\" candidates.",
+      "**Best Voice Use Case (ElevenLabs):** Voice is the primary interaction modality: Voxtral STT for input, ElevenLabs TTS for spatial audio feedback in AR. The `<speak>` tag convention for selective vocalization is a sophisticated voice UX design."
+    ],
+    "flags": [],
+    "reportFile": "judge_ethux_vibe-ar.md"
+  },
+  {
+    "rank": 28,
+    "name": "inception.computer",
+    "repoUrl": "https://github.com/Coreeze/inception.computer",
+    "repoOwner": "Coreeze",
+    "repoName": "inception.computer",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 19,
+      "creativity": 20,
+      "usefulness": 15,
+      "alignment": 16,
+      "total": 70
+    },
+    "summary": "Inception is an autonomous AI agent life simulation that drops characters into a real-world geographic map (Mapbox GL globe projection) and drives their daily actions via Mistral's Ministral-14B model through OpenRouter. Agents possess a layered cognitive architecture — episodic memory stored as markdown narratives in `life_md`, allostatic decay indices for health/vibe/wealth, a plausibility gate for action validation, and LLM-generated weekly action queues — all ticking in real time through a heartbeat scheduler. The project is deployed (inception.computer) with a Next.js frontend, Express/Socket.IO backend on DigitalOcean, and MongoDB persistence, and includes a bonus fine-tuning dataset builder targeting Mistral-7B persona generation.",
+    "strengths": [
+      "Real-world geographic grounding via Mapbox GL globe projection with real coordinates, not fictional maps or named placeholders. Agents walk to Le Consulat (18 Rue Norvins, Paris) and equivalent real venues globally.",
+      "Coherent multi-layer simulation engine: heartbeat scheduler → subscriber pipeline → action queue dequeue → plausibility gate → world state mutation → Socket.IO broadcast. The architecture is well-separated and readable.",
+      "Action taxonomy is unusually rich: `move`, `buy`, `event`, `marry`, `child_birth`, `adopt_pet`, `change_occupation` — each with domain-specific validation logic in `actionPlausibility.ts` (e.g., age check for `child_birth`, same-occupation guard for `change_occupation`).",
+      "The `life_md` and `soul_md` markdown narrative fields function as a cheap but effective episodic memory system — timestamped entries appended on every action — fed back into planning prompts without a separate vector database.",
+      "JSON-repair fallback in `openrouter.ts` (two-shot with a dedicated repair system prompt) is a pragmatic and real-world-hardened pattern.",
+      "Automatic portrait generation via Fal.ai (Flux) triggered as a Mongoose post-save hook (`being.ts`, lines 274-282) is a clean passive enrichment pattern.",
+      "The fine-tuning dataset builder (`build_finetune_dataset.py`) shows research ambition: it draws from `nvidia/Nemotron-Personas-USA`, applies 50/50 conditional/unconditional prompts, and outputs Mistral instruct format JSONL, ready for Unsloth/TRL.",
+      "Deployed and functional at inception.computer with real infrastructure (Vercel + DigitalOcean + MongoDB Atlas implied)."
+    ],
+    "improvements": [
+      "NPC autonomous planning is entirely commented out in `planner.ts` (lines 396-497). The `generateAllNPCPlans` function early-returns after populating the main character only, leaving NPCs static unless manually triggered. This significantly weakens the \"autonomous agents\" claim.",
+      "All three model tiers (`fast`, `smart`, `reasoning`) in `openrouter.ts` (lines 8-12) point to the same model ID (`mistralai/Ministral-3-14B-Instruct-2512`), removing the intended differentiation and raising questions about whether the smarter/reasoning path was intended to use a different model.",
+      "`DECAY_RATES` in `constants.ts` are all set to zero (health: 0, vibe: 0, life_mission: 0), meaning the allostatic decay system described in the README does not actually run. Characters cannot die from accumulated neglect in the current deployed state.",
+      "The OpenRouter base URL is a personal Cloudflare `trycloudflare.com` tunnel rather than the canonical `https://openrouter.ai/api/v1`. This is fragile, non-reproducible for judges running locally, and suggests the Ministral model is self-hosted but the setup is undocumented.",
+      "The `generateChoices` crossroads system and `checkSignals` logic are entirely commented out in `processHeartbeat.ts` (lines 435-452). One of the most narratively interesting features — player agency at inflection points — is disabled.",
+      "No relationship evolution between NPCs: the `relationship_index` decays on the character's NPCs (every 7 heartbeats), but NPCs do not form independent relationships with each other. The `Edge` model exists in `buildContext.ts` but is not populated by any active code path.",
+      "The fine-tuning dataset is only a builder script — no trained model, no inference endpoint, no W&B logging. It cannot be evaluated as a fine-tuning submission.",
+      "Minor: direct \"any\" type usage in several controller functions and some catch blocks swallow errors silently (empty `catch {}` in `processHeartbeat.ts`), reducing observability."
+    ],
+    "specialChallenges": [
+      "The README states \"Ministral 14B on NVIDIA Brev H100,\" which suggests a self-hosted model on NVIDIA hardware, potentially relevant to the Track 3 (On Device/NVIDIA) challenge. However, the actual API calls go through a Cloudflare tunnel whose backend cannot be independently verified, and no NVIDIA-specific tooling (TensorRT-LLM, NIM, etc.) is referenced in the codebase. The fine-tuning dataset builder targets Mistral-7B SFT but no trained weights or W&B integration exist for Track 2 consideration. No special challenge eligibility is confirmed based on code evidence alone."
+    ],
+    "flags": [],
+    "reportFile": "judge_coreeze_inception.computer.md"
+  },
+  {
+    "rank": 29,
+    "name": "turbo",
+    "repoUrl": "https://github.com/TALLEC-Scott/turbo-tax",
+    "repoOwner": "TALLEC-Scott",
+    "repoName": "turbo-tax",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 19,
+      "creativity": 17,
+      "usefulness": 20,
+      "alignment": 8,
+      "total": 64
+    },
+    "summary": "Turbo Tax is an IRS document parsing and knowledge-graph assistant that ingests US tax publications via Docling, distills them into an Obsidian markdown vault using an LLM agent, and exposes the resulting knowledge base through a FastAPI backend with a React/Cytoscape.js frontend. The chat interface allows users to ask tax questions answered by graph-traversal tool calls, while a real-time WebSocket panel animates the knowledge graph as the agent explores it. The project is impressively complete for a hackathon timeframe, with 554 Obsidian notes generated from 46 IRS publications, an evaluation harness, and a containerised deployment setup — but it uses a generic OpenAI-compatible interface rather than the Mistral API specifically.",
+    "strengths": [
+      "Comprehensive end-to-end pipeline: PDF/HTML parsing (Docling) → LLM distillation → Obsidian vault → chat API → visualisation frontend, all working and containerised",
+      "Substantial generated knowledge base: 554 Markdown notes from 46 IRS publications, with rich wikilinks, YAML frontmatter, and structured tables",
+      "Graph-traversal agent design with 10 purpose-built tool functions including recursive backlink/outlink exploration and index crawling (`server.py` lines 270–730)",
+      "Real-time WebSocket-based knowledge graph animation that updates as the agent traverses notes during a chat session (`DynamicGraph.tsx` + `/ws/traversal` endpoint)",
+      "High code quality: strict Ruff configuration with 20+ lint rule categories, Pydantic v2 models, async FastAPI, typed TypeScript frontend, pytest unit tests",
+      "Evaluation harness using an external IRS Q&A dataset with LLM-as-judge scoring (`scripts/llm_judge_eval.py`, `data/llm_eval_results.json`)",
+      "Thoughtful agent prompt engineering in `docs/AGENT_PROMPT.md` with explicit linking philosophy, citation standards, and note templates",
+      "Docker/Podman compose setup with dedicated services for distillation, extraction, and the interactive agent"
+    ],
+    "improvements": [
+      "**Mistral integration is absent**: The codebase uses a Qwen Code CLI for distillation and a generic `glm-5-fp8` model at a custom endpoint. Substituting Mistral's function-calling models (e.g., `mistral-large-latest` or `mistral-small-latest`) would be a minimal change that fully satisfies Track 1",
+      "**Credentials committed to the repository**: `.env` contains `OPENAI_API_KEY=test-key` and a non-public base URL (`http://px106.prod.exalead.com:8000/v1`); `.env` should be in `.gitignore`",
+      "**LLM evaluation is very limited**: Only 5 of 200 questions from the dataset were evaluated with the LLM judge; the keyword-based heuristic evaluation covers 200 questions but is a rough proxy",
+      "**Synchronous tool execution inside async handlers**: `execute_tool_async` in `server.py` wraps synchronous file-system operations (rglob, read_text) without `asyncio.to_thread`, which will block the event loop under load",
+      "**Frontend hardcodes port 8888** in `App.tsx` (`const API_URL = \\`http://\\${window.location.hostname}:8888\\``), while the backend README says port 8000 — mismatch that may confuse users",
+      "**`search_notes` tool is disabled** (commented out in `TOOLS` list) in favour of graph crawling, but the implementation is still present; a hybrid approach would improve recall for unfamiliar topics",
+      "**No actual PDF upload handling**: the `/upload` endpoint in `server.py` reads the file and returns its size, but does not trigger parsing or vault insertion"
+    ],
+    "specialChallenges": [],
+    "flags": [
+      "No Mistral"
+    ],
+    "reportFile": "judge_tallec-scott_turbo-tax.md"
+  },
+  {
+    "rank": 30,
+    "name": "mh",
+    "repoUrl": "https://github.com/divait/mh-front",
+    "repoOwner": "divait",
+    "repoName": "mh-front",
+    "track": "Fine-Tuning (W&B)",
+    "trackNumber": 2,
+    "scores": {
+      "technicity": 15,
+      "creativity": 18,
+      "usefulness": 14,
+      "alignment": 16,
+      "total": 63
+    },
+    "summary": "\"Les Mystères de Paris: AI Chronicles\" is a mystery-RPG set in Belle Époque Paris (1889–1911), where players explore a 2D Phaser 3 map of Paris, interrogate AI-powered NPCs, collect clues, and solve a murder mystery. The frontend (this repo) is built with React 18, TypeScript, Vite, and Phaser 3, with voice I/O via the Web Speech API. It connects to a FastAPI backend (`mh-back`) and a separate fine-tuning repo (`mh-fine-tuning`), meaning the overall project spans three repositories; this evaluation is based solely on the frontend repo, which is the only one provided.",
+    "strengths": [
+      "Well-engineered Phaser 3 scene: multi-directional player animation (separate walk/walk-up/walk-down sprite sheets), building interior/exterior transitions with custom wall collision rects, proximity-based NPC interaction zones, animated indicators, and a day/night atmosphere overlay",
+      "Clean component architecture: `TitleScreen` → `IntroDialogue` → `ParisScene` → `DialoguePanel` → `GameOverScreen` follows a clear game state machine progression via React routing in `App.tsx`",
+      "Voice I/O is genuinely implemented: Web Speech API for STT (microphone toggle with auto-send), `window.speechSynthesis` for TTS, background ambient music during gameplay",
+      "TypeScript throughout with explicit interfaces in `types.ts` and constants centralized in `constants.ts`",
+      "The gameState module (`game/gameState.ts`) provides clean shared state for clue tracking, active NPC, and quest objectives that bridges Phaser and React"
+    ],
+    "improvements": [
+      "This is a frontend-only repo; AI fine-tuning and NPC logic are in `mh-back` and `mh-fine-tuning`, making it impossible to evaluate Track 2 claims from this repo alone",
+      "No tests are present for the frontend components",
+      "Backend URL is hardcoded to `localhost:8000` in `constants.ts` with no environment variable configuration for deployment",
+      "The Cursor rules file (`.cursor/rules/frontend.mdc`) and `pnpm-lock.yaml` suggest Vibe-coded development, which is fine but means some scaffolding may not be deeply understood",
+      "No error handling is visible in the DialoguePanel for backend connectivity failures"
+    ],
+    "specialChallenges": [
+      "**Best Voice Use Case (ElevenLabs):** Partial eligibility — voice I/O is a central mechanic (Web Speech API for STT, browser TTS for NPC responses), but ElevenLabs specifically is not used in this frontend repo. If the backend uses ElevenLabs TTS for NPC voices, this could qualify — but that is not visible here.",
+      "**Best Video Game Project (Supercell):** Plausible — it is a playable mystery RPG game with AI-powered NPCs. The Belle Époque Paris setting and NPC interrogation mechanic are game-native. Whether it qualifies depends on the backend's AI quality, which cannot be assessed from this repo."
+    ],
+    "flags": [
+      "Partial"
+    ],
+    "reportFile": "judge_divait_mh-front.md"
+  },
+  {
+    "rank": 31,
+    "name": "SynthCare",
+    "repoUrl": "https://github.com/guigzair/SynthCare",
+    "repoOwner": "guigzair",
+    "repoName": "SynthCare",
+    "track": "Fine-Tuning (W&B)",
+    "trackNumber": 2,
+    "scores": {
+      "technicity": 12,
+      "creativity": 18,
+      "usefulness": 16,
+      "alignment": 14,
+      "total": 60
+    },
+    "summary": "SynthCare is a GAN (Generative Adversarial Network) framework for generating GDPR-compliant synthetic emergency health admission records, using Ministral-3B as both the generator and discriminator in a novel LLM-based GAN architecture. The project trains on MIMIC-III emergency admission data, generates synthetic patient records that preserve statistical distributions without exposing real patient information, and provides a Streamlit UI for interaction. It also includes W&B integration for training metrics and a verification pipeline for assessing synthetic data quality.",
+    "strengths": [
+      "Novel and creative application of GAN paradigm to LLM fine-tuning for medical data generation — an unconventional approach that is worth exploring",
+      "W&B integration is genuinely implemented (`wandb.init()` with project/config tracking, per-batch `wandb.log()` for discriminator loss, generator loss, LM loss, and fool loss)",
+      "The GDPR/healthcare framing is compelling and addresses a real, significant problem — synthetic health data is an active research area with real-world impact",
+      "`create_dataset.py` shows how to transform MIMIC-III CSV data (ADMISSIONS, PATIENTS, D_ICD_DIAGNOSES, D_ICD_PROCEDURES) into structured clinical story prompts",
+      "The project includes a `synthetic_data.jsonl` and `clinical_stories.jsonl` file, demonstrating that at least some data generation pipeline has been run",
+      "`inference_verification.py` suggests an evaluation pipeline exists to assess synthetic data quality",
+      "Streamlit UI (`streamlit_app.py`) provides a usable interface for the generated data"
+    ],
+    "improvements": [
+      "The discriminator architecture is technically flawed: `Mistral3ForConditionalGeneration` with `TaskType.SEQ_CLS` LoRA cannot produce per-sample classification scores without a classification head — the label expansion hack (`unsqueeze(1).expand(-1, seq_len)`) creates sequence-level token labels rather than binary real/fake labels",
+      "`GAN_fine_tuning.py` is labeled as GAN fine-tuning but is actually a standard LoRA fine-tuning script with a separate (unused in the loop) discriminator model — the two models are initialized but only the generator is trained via the `Trainer`",
+      "No trained model artifact, HuggingFace Hub push, or evaluation results showing synthetic data quality metrics (e.g., fidelity to MIMIC-III distributions, privacy guarantees)",
+      "The MIMIC-III dataset requires a data use agreement and is not included; `create_dataset.py` expects CSV files at `Data/ADMISSIONS.csv` etc. — making reproducibility impossible without institutional access",
+      "The `prompt.txt` file referenced in `Mistral_GAN_example.py` is included but contains a generic instruction without clinical specificity; more domain-specific prompting would improve generation quality",
+      "The Streamlit app (`streamlit_app.py`) is not shown in detail — unclear what it actually displays"
+    ],
+    "specialChallenges": [
+      "**Best AI for Safety Project (White Circle):** Plausible candidate. The project's central goal is generating synthetic health data to protect patient privacy and comply with GDPR — this is directly in the AI safety and responsible AI space. Preventing leakage of real patient data while enabling medical AI research is a meaningful safety application."
+    ],
+    "flags": [],
+    "reportFile": "judge_guigzair_synthcare.md"
+  },
+  {
+    "rank": 32,
+    "name": "coding",
+    "repoUrl": "https://github.com/Mistral-Hackation/coding-agent",
+    "repoOwner": "Mistral-Hackation",
+    "repoName": "coding-agent",
+    "track": "Anything Goes (AWS)",
+    "trackNumber": 1,
+    "scores": {
+      "technicity": 19,
+      "creativity": 17,
+      "usefulness": 18,
+      "alignment": 3,
+      "total": 57
+    },
+    "summary": "This project implements a multi-agent orchestrator in Rust that autonomously generates parametric CAD code (Python `build123d` scripts) from natural language objectives. A \"Conch Shell\" supervisor-worker state machine routes tasks through 7 specialized agents — Researcher, Coder, and four quality-gate Reviewers — before auto-executing the output script via `uv` and launching an interactive Three.js 3D viewer in the browser. The system is technically impressive and well-architected, but it uses Anthropic Claude (via Azure MaaS) as its AI backbone, with **no Mistral API or Mistral model integration anywhere in the codebase**, which is a fundamental disqualifying issue for a Mistral Hackathon submission.\n\n---",
+    "strengths": [
+      "**Rust implementation quality**: Idiomatic use of `async_trait`, typestate pattern for CAD artifacts (`Blueprint` → `Draft` → `Product` → `Broken`), sealed trait for lifecycle state enforcement, and `thiserror`/`anyhow` error hierarchy. Edition 2024 features (like `is_multiple_of`) are used.",
+      "**Layered observability**: Full OpenTelemetry integration with span taxonomy covering request root, orchestration, agent turns, and individual tool calls — instrumented via `tracing-opentelemetry` with OTLP gRPC/HTTP export to SigNoz or any compatible collector.",
+      "**Knowledge persistence system**: Agents can save domain insights to per-agent `_learned.md` files at runtime via `LearnKnowledge`, which genuinely accumulates across runs (the `coder_learned.md` file shows dozens of entries from actual hackathon usage).",
+      "**4-gate review pipeline**: Code quality, geometry/physics, user intent, and EU regulatory compliance reviewed sequentially with `ReviewConsensus` tracking — a thoughtful approach for industrial CAD.",
+      "**Production-oriented tooling**: Docker multi-stage build, `Justfile` for common tasks, a changelog with semver, and automated output folder Git journaling provide a solid project hygiene.",
+      "**Integrated 3D viewer**: Self-contained HTML with base64-encoded STL, Three.js OrbitControls, metallic rendering, and dimensions overlay is an excellent UX feature requiring no server.",
+      "**Example search corpus**: The `ExampleSearcher` tool enables agents to look up patterns from an actual build123d example library, improving code generation accuracy.",
+      "---"
+    ],
+    "improvements": [
+      "**Mistral integration is absent**: The project must use Mistral models or API to be eligible. The README even explicitly disclaims this: \"This repository intentionally uses Anthropic models via Azure MaaS only.\"",
+      "**Coder prompt and knowledge base conflict**: `CODER_PREAMBLE` (in `prompts.rs`) mandates `export_svg(part.part, \"output.svg\", ...)` as \"REQUIRED\", but `coder_knowledge.md` documents that `export_svg` does NOT exist for 3D Part objects — a direct contradiction that will cause runtime failures and confusion in the feedback loop.",
+      "**No demo outputs included**: Despite an elaborate output pipeline, the repository contains no sample `.py`, `.step`, `.stl`, or `viewer.html` files showing the system working end-to-end. The `tmp/` directory is empty.",
+      "**macOS-only viewer**: `src/viewer.rs` opens the HTML with the `open` command (macOS-specific) with no cross-platform fallback.",
+      "**`agentic_workflow.rs` example still references removed agents**: The `examples/agentic_workflow.rs` file imports and registers `OilGasReviewer` and `SupplyReviewer`, which the CHANGELOG says were removed in v1.3.0, creating a compilation inconsistency.",
+      "**Supervisor prompt is minimal**: `SUPERVISOR_PREAMBLE` is a single sentence (\"You are a Supervisor...\"), while all other agents have detailed, structured system prompts — the most important routing agent gets the least guidance.",
+      "**`L` file at root**: An empty file named `L` exists at the repository root — likely an accidental artifact.",
+      "**Track eligibility**: Submitting to a Mistral hackathon with exclusively Anthropic Claude integration is a fundamental track alignment failure.",
+      "---"
+    ],
+    "specialChallenges": [],
+    "flags": [
+      "No Mistral"
+    ],
+    "reportFile": "judge_mistral-hackation_coding-agent.md"
+  }
+]
