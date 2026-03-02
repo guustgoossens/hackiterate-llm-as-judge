@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project uses **Claude Code** (Anthropic's CLI agent) as an automated hackathon judge to evaluate submissions from the **Mistral AI Worldwide Hackathon 2026** (Paris Edition, Feb 28–Mar 1, 2026). Instead of manually reviewing 32+ repositories, we constructed a structured judging system prompt and had Claude evaluate each project by reading its GitHub repository directly.
+This project uses **Claude Code** as an automated hackathon judge to evaluate submissions from the **Mistral AI Worldwide Hackathon 2026** (Paris Edition, Feb 28–Mar 1, 2026). Instead of manually reviewing 32+ repositories, we constructed a structured judging system prompt and had Claude evaluate each project by reading its GitHub repository directly.
 
 ## Workflow
 
@@ -12,7 +12,7 @@ We scraped the hackathon submission page ([hackiterate.com](https://hackiterate.
 
 ### 2. Design the Judge System Prompt
 
-The core of the approach is `judge_system_prompt.md` — a detailed system prompt that instructs the LLM how to behave as a hackathon judge. Key design decisions:
+The core of the approach is `judge_system_prompt.md`; a detailed system prompt that instructs the LLM how to behave as a hackathon judge. Key design decisions:
 
 - **4 equally weighted criteria** (25 points each, 100 total): Technicity, Creativity, Usefulness, Track Alignment
 - **Score guides** with explicit ranges (0–6, 7–12, 13–19, 20–25) anchored to descriptions, preventing score inflation
@@ -51,8 +51,8 @@ After all individual reports were created, Claude compiled `reports/overview.md`
 ```
 hackiterate_llm_as_judge/
 ├── judge_system_prompt.md          # The LLM judge system prompt
-├── mistral_hackathon_repos.md      # List of all hackathon repos to evaluate
-├── WAY_OF_WORKING.md               # This document
+├── mistral_hackathon_paris_repos.md      # List of all hackathon repos to evaluate
+├── methodology.md               # This document
 └── reports/
     ├── overview.md                 # Master ranking & summary
     ├── judge_<owner>_<repo>.md     # Individual judge reports (32 files)
@@ -86,8 +86,8 @@ hackiterate_llm_as_judge/
 
 ## Tools Used
 
-- **Claude Code** (Anthropic CLI) — the LLM agent that performed all evaluations
-- **Claude Opus** — the underlying model powering the evaluations
+- **Claude Code** — the LLM agent that performed all evaluations
+- **Claude Sonnet 4.5** — the underlying model powering the evaluations
 - **GitHub CLI (`gh`)** — for authenticated access to repositories
 
 ## Results
