@@ -37,7 +37,7 @@ export function ProjectDetail({ project }: { project: Project }) {
         ]).map(({ key, label, color }) => (
           <div
             key={key}
-            className="overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]"
+            className="overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-elevated)]"
           >
             <div
               className="px-3 py-1.5 text-center text-[0.65rem] font-bold uppercase tracking-[0.15em]"

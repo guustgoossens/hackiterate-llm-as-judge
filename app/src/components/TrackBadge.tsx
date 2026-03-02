@@ -13,7 +13,7 @@ const TRACK_LABELS: Record<number, string> = {
 export function TrackBadge({ trackNumber }: { trackNumber: number }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${TRACK_STYLES[trackNumber] ?? ''}`}
+      className={`inline-flex items-center border px-2 py-0.5 text-xs font-semibold ${TRACK_STYLES[trackNumber] ?? ''}`}
     >
       {TRACK_LABELS[trackNumber] ?? `T${trackNumber}`}
     </span>

@@ -50,7 +50,7 @@ export function ProjectTable({
               e.stopPropagation()
               row.toggleExpanded()
             }}
-            className="rounded p-1 text-[var(--text-tertiary)] transition hover:bg-[var(--bg-elevated)] hover:text-[var(--orange-primary)]"
+            className="p-1 text-[var(--text-tertiary)] transition hover:bg-[var(--bg-elevated)] hover:text-[var(--orange-primary)]"
           >
             {row.getIsExpanded() ? (
               <ChevronDown size={16} />
@@ -151,7 +151,7 @@ export function ProjectTable({
   })
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+    <div className="overflow-x-auto border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
       <table className="w-full border-collapse">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (

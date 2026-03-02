@@ -14,9 +14,9 @@ export function ScoreBar({ score, max }: { score: number; max: number }) {
       <span className="w-6 text-right text-sm font-bold tabular-nums text-[var(--text-primary)]">
         {score}
       </span>
-      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-[var(--bg-input)]">
+      <div className="h-1.5 w-16 overflow-hidden bg-[var(--bg-input)]">
         <div
-          className={`h-full rounded-full bg-gradient-to-r ${scoreGradient(score, max)}`}
+          className={`h-full bg-gradient-to-r ${scoreGradient(score, max)}`}
           style={{ width: `${pct}%` }}
         />
       </div>

@@ -39,12 +39,12 @@ function App() {
   return (
     <main className="page-wrap px-4 pb-8 pt-8">
       {/* Hero banner with gradient */}
-      <section className="rise-in relative overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+      <section className="rise-in relative overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
         {/* Gradient accent bar at top */}
         <div className="h-1.5" style={{ background: 'linear-gradient(90deg, #E83A0F, #E85C0F, #F5A623, #FFD036)' }} />
 
         <div className="relative px-6 py-8 sm:px-10 sm:py-10">
-          {/* Subtle pixel grid background */}
+          {/* Subtle pixel grid background — behind text */}
           <div
             className="pulse-glow pointer-events-none absolute inset-0 opacity-[0.03]"
             style={{
@@ -54,13 +54,13 @@ function App() {
             }}
           />
 
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--orange-muted)]">
+          <p className="relative z-10 mb-2 font-[var(--font-pixel)] text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[var(--orange-bright)]">
             Mistral AI Worldwide Hackathon 2026
           </p>
-          <h1 className="gradient-text mb-3 text-3xl font-extrabold tracking-tight sm:text-5xl">
+          <h1 className="gradient-text relative z-10 mb-3 text-3xl font-extrabold tracking-tight sm:text-5xl">
             LLM-as-Judge Rankings
           </h1>
-          <p className="mb-0 max-w-2xl text-sm text-[var(--text-secondary)] sm:text-base">
+          <p className="relative z-10 mb-0 max-w-2xl text-sm text-[var(--text-secondary)] sm:text-base">
             {stats.total} projects evaluated across 3 tracks by Claude.
             Each scored on Technicity, Creativity, Usefulness, and Track Alignment (25 pts each).
           </p>
@@ -78,7 +78,7 @@ function App() {
         ].map(({ label, value, suffix, color }) => (
           <div
             key={label}
-            className="overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]"
+            className="overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-surface)]"
           >
             <div
               className="px-3 py-1 text-center text-[0.6rem] font-bold uppercase tracking-[0.2em]"
@@ -105,7 +105,7 @@ function App() {
             <button
               key={t.label}
               onClick={() => setTrackFilter(t.num)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+              className={`border px-3 py-1.5 text-xs font-semibold transition ${
                 trackFilter === t.num
                   ? 'border-[var(--orange-primary)]/40 bg-[var(--orange-primary)]/15 text-[var(--orange-bright)]'
                   : 'border-[var(--border-medium)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[var(--orange-primary)]/30 hover:text-[var(--text-primary)]'
@@ -126,7 +126,7 @@ function App() {
             placeholder="Search projects..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-[var(--border-medium)] bg-[var(--bg-surface)] py-2 pl-9 pr-4 text-sm text-[var(--text-primary)] placeholder-[var(--text-tertiary)] outline-none transition focus:border-[var(--orange-primary)] sm:w-64"
+            className="w-full border border-[var(--border-medium)] bg-[var(--bg-surface)] py-2 pl-9 pr-4 text-sm text-[var(--text-primary)] placeholder-[var(--text-tertiary)] outline-none transition focus:border-[var(--orange-primary)] sm:w-64"
           />
         </div>
       </section>

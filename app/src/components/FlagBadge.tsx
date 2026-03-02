@@ -7,7 +7,7 @@ const FLAG_STYLES: Record<string, string> = {
 export function FlagBadge({ flag }: { flag: string }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${FLAG_STYLES[flag] ?? FLAG_STYLES.Partial}`}
+      className={`inline-flex items-center gap-1 border px-2 py-0.5 text-xs font-medium ${FLAG_STYLES[flag] ?? FLAG_STYLES.Partial}`}
     >
       <span className="text-[0.6rem]">&#9888;</span>
       {flag}
