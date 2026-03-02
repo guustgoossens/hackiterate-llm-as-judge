@@ -5,10 +5,10 @@ export const Route = createFileRoute('/about')({ component: About })
 function About() {
   return (
     <main className="page-wrap px-4 pb-8 pt-8">
-      <section className="rise-in overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+      <section className="rise-in overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
         <div className="h-1.5" style={{ background: 'linear-gradient(90deg, #E83A0F, #E85C0F, #F5A623, #FFD036)' }} />
         <div className="px-6 py-8 sm:px-10 sm:py-10">
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--orange-muted)]">
+          <p className="mb-2 font-[var(--font-pixel)] text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[var(--orange-bright)]">
             How It Works
           </p>
           <h1 className="gradient-text mb-6 text-3xl font-extrabold tracking-tight sm:text-4xl">
@@ -44,6 +44,11 @@ function About() {
             </ol>
 
             <h2>Scoring Criteria</h2>
+            <img
+              src="/images/mistral-judging-criteria.png"
+              alt="Mistral AI Hackathon judging criteria: Technicity, Creativity, Usefulness, Demo, and Track Alignment — each 20%"
+              className="my-6 w-full border border-[var(--border-subtle)]"
+            />
             <table>
               <thead>
                 <tr>
