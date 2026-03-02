@@ -37,41 +37,61 @@ function App() {
   ]
 
   return (
-    <main className="page-wrap px-4 pb-8 pt-10">
-      {/* Hero */}
-      <section className="island-shell rise-in relative overflow-hidden rounded-[2rem] px-6 py-8 sm:px-10 sm:py-10">
-        <div className="pointer-events-none absolute -left-20 -top-24 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(79,184,178,0.32),transparent_66%)]" />
-        <div className="pointer-events-none absolute -bottom-20 -right-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(47,106,74,0.18),transparent_66%)]" />
-        <p className="island-kicker mb-2">Mistral AI Worldwide Hackathon 2026</p>
-        <h1 className="display-title mb-3 max-w-3xl text-3xl leading-tight font-bold tracking-tight text-[var(--sea-ink)] sm:text-5xl">
-          LLM-as-Judge Rankings
-        </h1>
-        <p className="mb-0 max-w-2xl text-sm text-[var(--sea-ink-soft)] sm:text-base">
-          {stats.total} projects evaluated across {stats.t1 + stats.t2 + stats.t3 > 0 ? '3 tracks' : 'multiple tracks'} by
-          Claude. Each scored on Technicity, Creativity, Usefulness, and Track Alignment (25 pts each).
-        </p>
+    <main className="page-wrap px-4 pb-8 pt-8">
+      {/* Hero banner with gradient */}
+      <section className="rise-in relative overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+        {/* Gradient accent bar at top */}
+        <div className="h-1.5" style={{ background: 'linear-gradient(90deg, #E83A0F, #E85C0F, #F5A623, #FFD036)' }} />
+
+        <div className="relative px-6 py-8 sm:px-10 sm:py-10">
+          {/* Subtle pixel grid background */}
+          <div
+            className="pulse-glow pointer-events-none absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage:
+                'linear-gradient(var(--orange-primary) 1px, transparent 1px), linear-gradient(90deg, var(--orange-primary) 1px, transparent 1px)',
+              backgroundSize: '24px 24px',
+            }}
+          />
+
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--orange-muted)]">
+            Mistral AI Worldwide Hackathon 2026
+          </p>
+          <h1 className="gradient-text mb-3 text-3xl font-extrabold tracking-tight sm:text-5xl">
+            LLM-as-Judge Rankings
+          </h1>
+          <p className="mb-0 max-w-2xl text-sm text-[var(--text-secondary)] sm:text-base">
+            {stats.total} projects evaluated across 3 tracks by Claude.
+            Each scored on Technicity, Creativity, Usefulness, and Track Alignment (25 pts each).
+          </p>
+        </div>
       </section>
 
-      {/* Stats */}
-      <section className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      {/* Stats row — gradient progression across cards */}
+      <section className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-5 sm:gap-3">
         {[
-          ['Projects', stats.total],
-          ['Mean', stats.mean],
-          ['Median', stats.median],
-          ['Highest', stats.highest],
-          ['Lowest', stats.lowest],
-        ].map(([label, value]) => (
+          { label: 'Projects', value: stats.total, suffix: '', color: '#E83A0F' },
+          { label: 'Mean', value: stats.mean, suffix: '/100', color: '#E85C0F' },
+          { label: 'Median', value: stats.median, suffix: '/100', color: '#F57A1F' },
+          { label: 'Highest', value: stats.highest, suffix: '/100', color: '#F5A623' },
+          { label: 'Lowest', value: stats.lowest, suffix: '/100', color: '#FFD036' },
+        ].map(({ label, value, suffix, color }) => (
           <div
-            key={label as string}
-            className="island-shell rounded-xl p-3 text-center"
+            key={label}
+            className="overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]"
           >
-            <div className="text-xs font-semibold uppercase tracking-wider text-[var(--sea-ink-soft)]">
+            <div
+              className="px-3 py-1 text-center text-[0.6rem] font-bold uppercase tracking-[0.2em]"
+              style={{ backgroundColor: `${color}15`, color }}
+            >
               {label}
             </div>
-            <div className="mt-1 text-xl font-bold tabular-nums text-[var(--sea-ink)]">
-              {value}
-              {label !== 'Projects' && (
-                <span className="text-sm font-normal text-[var(--sea-ink-soft)]">/100</span>
+            <div className="px-3 py-2.5 text-center">
+              <span className="text-xl font-extrabold tabular-nums text-[var(--text-primary)]">
+                {value}
+              </span>
+              {suffix && (
+                <span className="text-xs font-normal text-[var(--text-tertiary)]">{suffix}</span>
               )}
             </div>
           </div>
@@ -79,7 +99,7 @@ function App() {
       </section>
 
       {/* Filters */}
-      <section className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <section className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2">
           {tracks.map((t) => (
             <button
@@ -87,26 +107,26 @@ function App() {
               onClick={() => setTrackFilter(t.num)}
               className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                 trackFilter === t.num
-                  ? 'border-[var(--lagoon)] bg-[rgba(79,184,178,0.18)] text-[var(--lagoon-deep)]'
-                  : 'border-[var(--line)] bg-[var(--surface)] text-[var(--sea-ink-soft)] hover:border-[var(--lagoon-deep)] hover:text-[var(--sea-ink)]'
+                  ? 'border-[var(--orange-primary)]/40 bg-[var(--orange-primary)]/15 text-[var(--orange-bright)]'
+                  : 'border-[var(--border-medium)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[var(--orange-primary)]/30 hover:text-[var(--text-primary)]'
               }`}
             >
               {t.label}
-              <span className="ml-1 opacity-60">{t.count}</span>
+              <span className="ml-1 opacity-50">{t.count}</span>
             </button>
           ))}
         </div>
         <div className="relative">
           <Search
             size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sea-ink-soft)]"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]"
           />
           <input
             type="text"
             placeholder="Search projects..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-full border border-[var(--line)] bg-[var(--surface)] py-2 pl-9 pr-4 text-sm text-[var(--sea-ink)] placeholder-[var(--sea-ink-soft)] outline-none transition focus:border-[var(--lagoon)] focus:ring-1 focus:ring-[var(--lagoon)] sm:w-64"
+            className="w-full rounded-xl border border-[var(--border-medium)] bg-[var(--bg-surface)] py-2 pl-9 pr-4 text-sm text-[var(--text-primary)] placeholder-[var(--text-tertiary)] outline-none transition focus:border-[var(--orange-primary)] sm:w-64"
           />
         </div>
       </section>

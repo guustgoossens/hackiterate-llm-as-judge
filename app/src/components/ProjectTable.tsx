@@ -50,7 +50,7 @@ export function ProjectTable({
               e.stopPropagation()
               row.toggleExpanded()
             }}
-            className="rounded p-1 text-[var(--sea-ink-soft)] transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
+            className="rounded p-1 text-[var(--text-tertiary)] transition hover:bg-[var(--bg-elevated)] hover:text-[var(--orange-primary)]"
           >
             {row.getIsExpanded() ? (
               <ChevronDown size={16} />
@@ -66,7 +66,7 @@ export function ProjectTable({
         accessorKey: 'rank',
         header: '#',
         cell: ({ getValue }) => (
-          <span className="text-sm font-semibold tabular-nums text-[var(--sea-ink-soft)]">
+          <span className="text-sm font-bold tabular-nums text-[var(--text-tertiary)]">
             {getValue<number>()}
           </span>
         ),
@@ -81,7 +81,7 @@ export function ProjectTable({
               href={row.original.repoUrl}
               target="_blank"
               rel="noreferrer"
-              className="text-sm font-semibold"
+              className="text-sm font-bold text-[var(--text-primary)] hover:text-[var(--orange-primary)]"
               onClick={(e) => e.stopPropagation()}
             >
               {row.original.name}
@@ -151,22 +151,22 @@ export function ProjectTable({
   })
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-[var(--line)] bg-[var(--surface)]">
+    <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
       <table className="w-full border-collapse">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id} className="border-b border-[var(--line)]">
+            <tr key={headerGroup.id} className="border-b border-[var(--border-subtle)]">
               {headerGroup.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--sea-ink-soft)]"
+                  className="px-3 py-3 text-left text-[0.65rem] font-bold uppercase tracking-[0.15em] text-[var(--text-tertiary)]"
                   style={{ width: header.getSize() }}
                 >
                   {header.isPlaceholder ? null : (
                     <button
                       className={`inline-flex items-center gap-1 ${
                         header.column.getCanSort()
-                          ? 'cursor-pointer select-none hover:text-[var(--sea-ink)]'
+                          ? 'cursor-pointer select-none hover:text-[var(--orange-primary)]'
                           : ''
                       }`}
                       onClick={header.column.getToggleSortingHandler()}
@@ -179,11 +179,11 @@ export function ProjectTable({
                       {header.column.getCanSort() && (
                         <>
                           {header.column.getIsSorted() === 'asc' ? (
-                            <ArrowUp size={12} />
+                            <ArrowUp size={10} className="text-[var(--orange-primary)]" />
                           ) : header.column.getIsSorted() === 'desc' ? (
-                            <ArrowDown size={12} />
+                            <ArrowDown size={10} className="text-[var(--orange-primary)]" />
                           ) : (
-                            <ArrowUpDown size={12} className="opacity-30" />
+                            <ArrowUpDown size={10} className="opacity-30" />
                           )}
                         </>
                       )}
@@ -198,8 +198,8 @@ export function ProjectTable({
           {table.getRowModel().rows.map((row) => (
             <Fragment key={row.id}>
               <tr
-                className={`border-b border-[var(--line)] transition hover:bg-[var(--link-bg-hover)] ${
-                  row.getIsExpanded() ? 'bg-[var(--link-bg-hover)]' : ''
+                className={`border-b border-[var(--border-subtle)] transition-colors hover:bg-[var(--bg-elevated)] ${
+                  row.getIsExpanded() ? 'bg-[var(--bg-elevated)]' : ''
                 }`}
                 onClick={() => row.toggleExpanded()}
                 style={{ cursor: 'pointer' }}
@@ -211,7 +211,7 @@ export function ProjectTable({
                 ))}
               </tr>
               {row.getIsExpanded() && (
-                <tr key={`${row.id}-detail`} className="border-b border-[var(--line)] bg-[var(--surface-strong)]">
+                <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-app)]">
                   <td colSpan={row.getVisibleCells().length}>
                     <ProjectDetail project={row.original} />
                   </td>
@@ -222,7 +222,7 @@ export function ProjectTable({
         </tbody>
       </table>
       {table.getRowModel().rows.length === 0 && (
-        <div className="px-4 py-8 text-center text-sm text-[var(--sea-ink-soft)]">
+        <div className="px-4 py-8 text-center text-sm text-[var(--text-tertiary)]">
           No projects match your filters.
         </div>
       )}
